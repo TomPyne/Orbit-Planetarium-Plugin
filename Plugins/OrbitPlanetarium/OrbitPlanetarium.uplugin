@@ -1,0 +1,38 @@
+{
+	"FileVersion": 3,
+	"Version": 1,
+	"VersionName": "1.0",
+	"FriendlyName": "OrbitPlanetarium",
+	"Description": "Planetarium Generation Suite",
+	"Category": "Other",
+	"CreatedBy": "Tom Pyne",
+	"CreatedByURL": "",
+	"DocsURL": "",
+	"MarketplaceURL": "",
+	"SupportURL": "",
+	"CanContainContent": true,
+	"IsBetaVersion": true,
+	"Installed": false,
+  "Modules": [
+    {
+      "Name": "OrbitPlanetarium",
+      "Type": "Developer",
+      "LoadingPhase": "Default"
+    },
+    {
+      "Name": "OrbitPlanetariumEditor",
+      "Type": "Editor",
+      "LoadingPhase": "Default"
+    }
+  ],
+  "Plugins": [
+    {
+      "Name": "UnrealFastNoisePlugin",
+      "Enabled": true
+    },
+    {
+      "Name": "ProceduralMeshComponent",
+      "Enabled": true
+    }
+  ]
+}
