@@ -205,6 +205,11 @@ void AOP_ProceduralPlanet::GeneratePlanet(bool bIgnoreLOD)
 
 			// Calculate VertexColour for shader
 			float vcValue = (height + 1.0f) / 2.0f;
+
+			// If the point is lower than MinWaterLevel ensure it is displayed as water in the material by
+			// forcing value to 0
+			if (vcValue >= 1 - MinWaterLevel) vcValue = 0.95f;
+
 			vcValue = FMath::Clamp(vcValue, 0.0f, 1.0f);
 			FLinearColor vColour = FLinearColor(vcValue, vcValue, vcValue);
 			planetData->VertexColours.Add(vColour);
