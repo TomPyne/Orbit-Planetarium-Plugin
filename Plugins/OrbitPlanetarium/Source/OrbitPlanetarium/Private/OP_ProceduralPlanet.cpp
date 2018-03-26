@@ -46,19 +46,12 @@ void AOP_ProceduralPlanet::BeginPlay()
 	LOD2DistanceSqrd = FMath::Square(LOD2Distance);
 	LOD1DistanceSqrd = FMath::Square(LOD1Distance);
 
-	// Generate the noise cubes
-	GenerateNoiseCubes();
-	cubemap = NoiseCube->GetCubeTextures();
-
-	GenerateCubemapNoise();
-
 	// Get references
 	PlayerPawn = UGameplayStatics::GetPlayerPawn(GetWorld(), 0);
 
 	// Check the LOD, this also generates the planet if the LOD has changed
 	CheckLODRange(true);
 
-	MakeTestTex();
 }
 
 void AOP_ProceduralPlanet::GenerateNoiseCubes()
@@ -82,15 +75,18 @@ void AOP_ProceduralPlanet::GeneratePlanet(bool bIgnoreLOD)
 	// If no procedural mesh component no point executing
 	if (ProcMeshComponent == nullptr) { return; }
 
+	// If there is no noiseCube or a seed hasn't been set, generate them
+	if (NoiseCube == nullptr || RoughNoiseCube == nullptr || !bUseSeed)
+	{
+		GenerateNoiseCubes();
+	}
+
 	UOP_PlanetData* planetData = TryGetCachedLOD(currentLOD);
 	if (bIgnoreLOD)
 	{
 		planetData = NewObject<UOP_PlanetData>();
 	}
 	if (planetData == nullptr) { return; }
-
-	// Generate the cube map noise
-	GenerateCubemapNoise();
 
 	// If the planetData isn't populated we need to generate it
 	if (!planetData->IsPopulated())
@@ -166,7 +162,6 @@ void AOP_ProceduralPlanet::GeneratePlanet(bool bIgnoreLOD)
 
 
 		FVector position = GetActorLocation();
-		//FVector ActorLocation = GetActorLocation();
 
 		TArray<FOP_SphericalCoords> PolarVertices3D;
 		for (int i = 0; i < planetData->Vertices.Num(); i++)
@@ -304,110 +299,6 @@ void AOP_ProceduralPlanet::ClearPlanet()
 	}
 }
 
-void AOP_ProceduralPlanet::UpdatePlanet()
-{
-	// If no procedural mesh component no point executing
-	if (ProcMeshComponent == nullptr) { return; }
-	UOP_PlanetData* planetData = TryGetCachedLOD(currentLOD);
-
-	if (planetData == nullptr)
-	{
-		UE_LOG(LogTemp, Warning, TEXT("PlanetData is not available, try generate planet first instead"));
-		return;
-	}
-	else if (!planetData->IsPopulated())
-	{
-		UE_LOG(LogTemp, Warning, TEXT("PlanetData is not available, try generate planet first instead"));
-		return;
-	}
-
-	// Generate the cube map noise
-	GenerateCubemapNoise();
-
-	TArray<FOP_SphericalCoords> PolarVertices3D;
-
-	// Get the new heights for each vertex
-	for (int i = 0; i < planetData->Vertices.Num(); i++)
-	{
-		// Get height from the cubemap
-		FVector vNormal = (GetActorLocation() - planetData->Vertices[i]).GetSafeNormal();
-		float height = GetCubemapHeight(planetData->Vertices[i], vNormal);
-
-		// Clamp to water level
-		if (height > (1.0f - (MinWaterLevel * 2.0f)))
-		{
-			height = 1.0f - (MinWaterLevel * 2.0f);
-		}
-
-		// Add normal data
-		planetData->Normals.Add(-vNormal);
-
-		// Calculate VertexColour for shader
-		float vcValue = (height + 1.0f) / 2.0f;
-		vcValue = FMath::Clamp(vcValue, 0.0f, 1.0f);
-		FLinearColor vColour = FLinearColor(vcValue, vcValue, vcValue);
-		planetData->VertexColours.Add(vColour);
-
-		// Redistribution
-		height < 0.0f ? FMath::Pow(height * -1.0f, Redistribution) * -1.0f : FMath::Pow(height, Redistribution);
-
-		// Convert to spherical coordinates to apply the height to the radius
-		FOP_SphericalCoords sCoords = FOP_SphericalCoords(planetData->Vertices[i]);
-		sCoords.Radius = Radius + (height * Scale);
-		planetData->UV.Add(FVector2D(sCoords.Theta, sCoords.Phi));
-		PolarVertices3D.Add(sCoords);
-	}
-
-	// Empty the vertex array and repopulate it with the polar vertices
-	planetData->Vertices.Empty();
-	for (FOP_SphericalCoords polarV : PolarVertices3D)
-	{
-		FVector cartesianVertex = polarV.ToCartesian();
-		planetData->Vertices.Add(cartesianVertex);
-
-	}
-
-	// Calculate tangents
-	TArray<FVector> tangents;
-	tangents.Init(FVector::ZeroVector, planetData->Vertices.Num());
-	for (int i = 0; i < planetData->Triangles.Num();)
-	{
-		if (tangents[planetData->Triangles[i]] == FVector::ZeroVector)
-		{
-			FVector p0 = planetData->Vertices[planetData->Triangles[i]];
-			FVector p1 = planetData->Vertices[planetData->Triangles[i + 1]];
-			FVector tangent = (p1 - p0).GetSafeNormal();
-			tangents[planetData->Triangles[i]] = tangent;
-			planetData->Tangents.Add(FProcMeshTangent(tangent, true));
-		}
-		i += 3;
-	}
-
-	UE_LOG(LogTemp, Warning, TEXT("MeshData: %s"), *planetData->ToString());
-
-	// Update the mesh
-	//ProcMeshComponent->ClearAllMeshSections();
-	ProcMeshComponent->UpdateMeshSection_LinearColor(
-		0,
-		planetData->Vertices,
-		planetData->Normals,
-		planetData->UV,
-		planetData->VertexColours,
-		planetData->Tangents);
-
-	// Set the material
-	if (Material)
-	{
-		ProcMeshComponent->SetMaterial(0, Material);
-	}
-
-	// Cache the changes
-	CacheLOD(currentLOD, planetData);
-
-	// Generate image from heightmap
-	GenerateHeatMapTex(planetData);
-}
-
 int AOP_ProceduralPlanet::AddVertex(FVector v, UOP_PlanetData * planet)
 {
 	double Length = v.Size();
@@ -429,68 +320,6 @@ int AOP_ProceduralPlanet::GetMiddlePoint(int p1, int p2, UOP_PlanetData * planet
 	int i = AddVertex(middle, planet);
 
 	return i;
-}
-
-UUFNNoiseGenerator * AOP_ProceduralPlanet::CreateNoiseGenerator()
-{
-	if (!bUseSeed) Seed = FMath::RandRange(0, 9999999);
-
-	UUFNNoiseGenerator* noiseGen = UUFNBlueprintFunctionLibrary::CreateFractalNoiseGenerator(
-		this,
-		NoiseType,
-		Seed,
-		Frequency,
-		FractalGain,
-		Interpolation,
-		FractalType,
-		Octaves,
-		Lacunarity
-	);
-
-	return noiseGen;
-}
-
-UUFNNoiseGenerator * AOP_ProceduralPlanet::CreateRoughNoiseGenerator()
-{
-	if (!bUseSeed) Seed = FMath::RandRange(0, 9999999);
-
-	UUFNNoiseGenerator* noiseGen = UUFNBlueprintFunctionLibrary::CreateFractalNoiseGenerator(
-		this,
-		RoughNoiseType,
-		Seed,
-		RoughFrequency,
-		RoughFractalGain,
-		RoughInterpolation,
-		RoughFractalType,
-		RoughOctaves,
-		RoughLacunarity
-	);
-
-	return noiseGen;
-}
-
-UUFNNoiseGenerator * AOP_ProceduralPlanet::GetNoiseGenerator()
-{
-	if (NoiseGenerator != nullptr)
-	{
-		return NoiseGenerator;
-	}
-	else
-	{
-		NoiseGenerator = CreateNoiseGenerator();
-
-		if (NoiseGenerator != nullptr)
-		{
-			return NoiseGenerator;
-		}
-		else
-		{
-			UE_LOG(LogTemp, Warning, TEXT("Unable to create a noise Generator"));
-			return nullptr;
-		}
-	}
-
-
 }
 
 UOP_PlanetData * AOP_ProceduralPlanet::TryGetCachedLOD(uint8 LOD)
@@ -594,144 +423,6 @@ void AOP_ProceduralPlanet::GenerateHeatMapTex(UOP_PlanetData* planetData)
 		colorMap,
 		this,
 		TEXT("CombinedNoise"),
-		EObjectFlags::RF_Transient,
-		params);
-}
-
-bool AOP_ProceduralPlanet::GenerateCubemapNoise()
-{
-	NoiseGenerator_XPos = CreateSeededNoiseGenerators(Seed);
-	NoiseGenerator_XNeg = CreateSeededNoiseGenerators(Seed + 1);
-	NoiseGenerator_YPos = CreateSeededNoiseGenerators(Seed + 2);
-	NoiseGenerator_YNeg = CreateSeededNoiseGenerators(Seed + 3);
-	NoiseGenerator_ZPos = CreateSeededNoiseGenerators(Seed + 4);
-	NoiseGenerator_ZNeg = CreateSeededNoiseGenerators(Seed + 5);
-
-	RoughNoiseGenerator_XPos = CreateSeededRoughNoiseGenerators(Seed);
-	RoughNoiseGenerator_XNeg = CreateSeededRoughNoiseGenerators(Seed + 1);
-	RoughNoiseGenerator_YPos = CreateSeededRoughNoiseGenerators(Seed + 2);
-	RoughNoiseGenerator_YNeg = CreateSeededRoughNoiseGenerators(Seed + 3);
-	RoughNoiseGenerator_ZPos = CreateSeededRoughNoiseGenerators(Seed + 4);
-	RoughNoiseGenerator_ZNeg = CreateSeededRoughNoiseGenerators(Seed + 5);
-
-	if (NoiseGenerator_XPos == nullptr
-		|| NoiseGenerator_XNeg == nullptr
-		|| NoiseGenerator_YPos == nullptr
-		|| NoiseGenerator_YNeg == nullptr
-		|| NoiseGenerator_ZPos == nullptr
-		|| NoiseGenerator_ZNeg == nullptr
-		|| RoughNoiseGenerator_XPos == nullptr
-		|| RoughNoiseGenerator_XNeg == nullptr
-		|| RoughNoiseGenerator_YPos == nullptr
-		|| RoughNoiseGenerator_YNeg == nullptr
-		|| RoughNoiseGenerator_ZPos == nullptr
-		|| RoughNoiseGenerator_ZNeg == nullptr)
-	{
-		UE_LOG(LogTemp, Warning, TEXT("AOP_ProceduralPlanet::GenerateCubemapNoise failed"));
-		return false;
-	}
-	
-	return true;
-}
-
-UUFNNoiseGenerator * AOP_ProceduralPlanet::CreateSeededNoiseGenerators(int32 seed)
-{
-	UUFNNoiseGenerator* noiseGen = UUFNBlueprintFunctionLibrary::CreateFractalNoiseGenerator(
-		this,
-		NoiseType,
-		seed,
-		Frequency,
-		FractalGain,
-		Interpolation,
-		FractalType,
-		Octaves,
-		Lacunarity
-	);
-
-	return noiseGen;
-}
-
-UUFNNoiseGenerator * AOP_ProceduralPlanet::CreateSeededRoughNoiseGenerators(int32 seed)
-{
-	UUFNNoiseGenerator* noiseGen = UUFNBlueprintFunctionLibrary::CreateFractalNoiseGenerator(
-		this,
-		RoughNoiseType,
-		seed,
-		RoughFrequency,
-		RoughFractalGain,
-		RoughInterpolation,
-		RoughFractalType,
-		RoughOctaves,
-		RoughLacunarity
-	);
-
-	return noiseGen;
-}
-
-float AOP_ProceduralPlanet::GetCubemapHeight(FVector position, FVector normal)
-{
-	return GetXHeight(normal.X, normal) + GetYHeight(normal.Y, normal) + GetZHeight(normal.Z, normal);
-}
-
-float AOP_ProceduralPlanet::GetXHeight(float perc, FVector pos)
-{
-	pos.X = 0.0f;
-	UUFNNoiseGenerator* noiseGen = perc > 0 ? NoiseGenerator_XPos : NoiseGenerator_XNeg;
-	UUFNNoiseGenerator* roughNoiseGen = perc > 0 ? RoughNoiseGenerator_XPos : RoughNoiseGenerator_XNeg;
-	if (noiseGen != nullptr && roughNoiseGen != nullptr)
-	{ return perc * (noiseGen->GetNoise2D(pos.Y, pos.Z) + roughNoiseGen->GetNoise2D(pos.Y, pos.Z)); }
-	return 0.0f;
-}
-
-float AOP_ProceduralPlanet::GetYHeight(float perc, FVector pos)
-{
-	pos.Y = 0.0f;
-	UUFNNoiseGenerator* noiseGen = perc > 0 ? NoiseGenerator_YPos : NoiseGenerator_YNeg;
-	UUFNNoiseGenerator* roughNoiseGen = perc > 0 ? RoughNoiseGenerator_YPos : RoughNoiseGenerator_YNeg;
-	if (noiseGen != nullptr && roughNoiseGen != nullptr)
-	{ return perc * (noiseGen->GetNoise2D(pos.X, pos.Z) + roughNoiseGen->GetNoise2D(pos.X, pos.Z)); }
-	return 0.0f;
-}
-
-float AOP_ProceduralPlanet::GetZHeight(float perc, FVector pos)
-{
-	pos.Z = 0.0f;
-	UUFNNoiseGenerator* noiseGen = perc > 0 ? NoiseGenerator_ZPos : NoiseGenerator_ZNeg;
-	UUFNNoiseGenerator* roughNoiseGen = perc > 0 ? RoughNoiseGenerator_ZPos : RoughNoiseGenerator_ZNeg;
-	if (noiseGen != nullptr && roughNoiseGen != nullptr)
-	{ return perc * (noiseGen->GetNoise2D(pos.X, pos.Y) + roughNoiseGen->GetNoise2D(pos.X, pos.Y)); }
-	return 0.0f;
-}
-
-void AOP_ProceduralPlanet::MakeTestTex()
-{
-	if (NoiseGenerator_XPos == nullptr)
-	{
-		UE_LOG(LogTemp, Warning, TEXT("No noisegen ref AOP_ProceduralPlanet::MakeTestTex"));
-		return;
-	}
-
-	int resolution = 128;
-	TArray<FColor> colorMap;
-	colorMap.Init(FColor::Black, resolution * resolution);
-	float step = 1.0f / resolution;
-	int index = 0;
-	for (int y = 0; y < resolution; y++)
-	{
-		for (int x = 0; x < resolution; x++)
-		{
-			float height = NoiseGenerator_XPos->GetNoise2D(step * x, step * y);
-			colorMap[index] = FColor(height * 255, height * 255, height * 255);
-			index++;
-		}
-	}
-
-	FCreateTexture2DParameters params;
-	TestHeightNoise = FImageUtils::CreateTexture2D(resolution,
-		resolution,
-		colorMap,
-		this,
-		TEXT("Noise"),
 		EObjectFlags::RF_Transient,
 		params);
 }

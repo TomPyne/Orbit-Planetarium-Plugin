@@ -238,18 +238,6 @@ public:
 	float LOD7DistanceSqrd = 0.0f;
 	float LOD8DistanceSqrd = 0.0f;
 
-	// TestTex ///////////////////////////////////////////////////////////////////
-
-	/*UPROPERTY(VisibleAnywhere, Category = TestTex)
-	UTexture2D* OceanNoiseTex;
-
-	UPROPERTY(VisibleAnywhere, Category = TestTex)
-	UTexture2D* TerrainNoiseTex;
-
-	UPROPERTY(VisibleAnywhere, Category = TestTex)
-	UTexture2D* RoughnessNoiseTex;
-	*/
-
 	UPROPERTY(VisibleAnywhere, Category = TestTex)
 	UTexture2D* CombinedNoiseTex;
 
@@ -261,10 +249,6 @@ public:
 
 	// Clear the mesh
 	void ClearPlanet();
-
-	// updates the planet vertex positions without modifying
-	// tris or vertex list
-	void UpdatePlanet();
 
 protected:
 
@@ -287,15 +271,6 @@ protected:
 	static int AddVertex(FVector v, UOP_PlanetData* planet);
 	static int GetMiddlePoint(int p1, int p2, UOP_PlanetData* planet);
 
-	// Create the noise generator
-	UUFNNoiseGenerator* CreateNoiseGenerator();
-
-	// Create Rough noise generator
-	UUFNNoiseGenerator* CreateRoughNoiseGenerator();
-
-	// Try get the noise generator, if none created, create one
-	UUFNNoiseGenerator* GetNoiseGenerator();
-
 	// Checks if LOD is cached and returns a TArray, if the TArray is empty, there are no cached LODs
 	UOP_PlanetData* TryGetCachedLOD(uint8 LOD);
 	void CacheLOD(uint8 LOD, UOP_PlanetData* data);
@@ -306,66 +281,5 @@ protected:
 
 	void GenerateHeatMapTex(UOP_PlanetData* planetData);
 
-private:	
-
-	// The noise generator
-	UPROPERTY()
-	UUFNNoiseGenerator* NoiseGenerator;
-
-	// The rough noise generator
-	UPROPERTY()
-	UUFNNoiseGenerator* RoughNoiseGenerator;
-	
-	// CubeMap
-	UPROPERTY()
-	UUFNNoiseGenerator* NoiseGenerator_XPos;
-
-	UPROPERTY()
-	UUFNNoiseGenerator* NoiseGenerator_XNeg;
-
-	UPROPERTY()
-	UUFNNoiseGenerator* NoiseGenerator_YPos;
-
-	UPROPERTY()
-	UUFNNoiseGenerator* NoiseGenerator_YNeg;
-
-	UPROPERTY()
-	UUFNNoiseGenerator* NoiseGenerator_ZPos;
-
-	UPROPERTY()
-	UUFNNoiseGenerator* NoiseGenerator_ZNeg;
-
-	UPROPERTY()
-	UUFNNoiseGenerator* RoughNoiseGenerator_XPos;
-
-	UPROPERTY()
-	UUFNNoiseGenerator* RoughNoiseGenerator_XNeg;
-
-	UPROPERTY()
-	UUFNNoiseGenerator* RoughNoiseGenerator_YPos;
-
-	UPROPERTY()
-	UUFNNoiseGenerator* RoughNoiseGenerator_YNeg;
-
-	UPROPERTY()
-	UUFNNoiseGenerator* RoughNoiseGenerator_ZPos;
-
-	UPROPERTY()
-	UUFNNoiseGenerator* RoughNoiseGenerator_ZNeg;
-
-	bool GenerateCubemapNoise();
-
-	UUFNNoiseGenerator* CreateSeededNoiseGenerators(int32 seed);
-	UUFNNoiseGenerator* CreateSeededRoughNoiseGenerators(int32 seed);
-
-	// Combined Height
-	float GetCubemapHeight(FVector position, FVector normal);
-
-	// Height for each of the axes
-	float GetXHeight(float perc, FVector pos);
-	float GetYHeight(float perc, FVector pos);
-	float GetZHeight(float perc, FVector pos);
-
-
-	void MakeTestTex();
+private:
 };

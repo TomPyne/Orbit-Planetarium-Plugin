@@ -65,27 +65,6 @@ void FOP_ProceduralPlanetDetails::CustomizeDetails(IDetailLayoutBuilder & Detail
 			.Text(ClearPlanetText)
 		]
 		];
-
-	procPlanetCategory.AddCustomRow(UpdatePlanetText, false)
-		.NameContent()
-		[
-			SNullWidget::NullWidget
-		]
-	.ValueContent()
-		.VAlign(VAlign_Center)
-		.MaxDesiredWidth(250)
-		[
-			SNew(SButton)
-			.VAlign(VAlign_Center)
-		.ToolTipText(LOCTEXT("UpdatePlanetTooltip", "Update the Planet data"))
-		.OnClicked(this, &FOP_ProceduralPlanetDetails::ClickedOnUpdatePlanet)
-		.IsEnabled(this, &FOP_ProceduralPlanetDetails::UpdatePlanetEnabled)
-		.Content()
-		[
-			SNew(STextBlock)
-			.Text(UpdatePlanetText)
-		]
-		];
 }
 
 FReply FOP_ProceduralPlanetDetails::ClickedOnGeneratePlanet()
@@ -111,28 +90,12 @@ FReply FOP_ProceduralPlanetDetails::ClickedOnClearPlanet()
 	return FReply::Handled();
 }
 
-FReply FOP_ProceduralPlanetDetails::ClickedOnUpdatePlanet()
-{
-	AOP_ProceduralPlanet* procPlanet = GetFirstSelectedProceduralPlanet();
-	if (procPlanet != nullptr)
-	{
-		procPlanet->UpdatePlanet();
-	}
-
-	return FReply::Handled();
-}
-
 bool FOP_ProceduralPlanetDetails::GeneratePlanetEnabled() const
 {
 	return GetFirstSelectedProceduralPlanet() != nullptr;
 }
 
 bool FOP_ProceduralPlanetDetails::ClearPlanetEnabled() const
-{
-	return GetFirstSelectedProceduralPlanet() != nullptr;
-}
-
-bool FOP_ProceduralPlanetDetails::UpdatePlanetEnabled() const
 {
 	return GetFirstSelectedProceduralPlanet() != nullptr;
 }

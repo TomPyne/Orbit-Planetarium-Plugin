@@ -23,13 +23,9 @@ public:
 	// Handle clicking on clear button
 	FReply ClickedOnClearPlanet();
 
-	// Handle clicking on update button
-	FReply ClickedOnUpdatePlanet();
-
 	// Is the button enabled
 	bool GeneratePlanetEnabled() const;
 	bool ClearPlanetEnabled() const;
-	bool UpdatePlanetEnabled() const;
 
 	AOP_ProceduralPlanet* GetFirstSelectedProceduralPlanet() const;
 
