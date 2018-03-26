@@ -1,30 +1,29 @@
 // Tom Pyne - 2018
 
-#include "HeightmapDecal.h"
+#include "OP_HeightmapDecal.h"
 #include "Engine/Texture2D.h"
 
 
-void UHeightmapDecal::CreateDecal(int resolution, UTexture2D* heightDecalTex)
+void UOP_HeightmapDecal::CreateDecal(int resolution, UTexture2D* heightDecalTex, int frequency)
 {
 	Resolution = resolution;
+	MaxFrequency = frequency;
 
 	FTexture2DMipMap* mipmap = &heightDecalTex->PlatformData->Mips[0];
 	FByteBulkData* rawImageData = &mipmap->BulkData;
 	FColor* formattedImageData = static_cast<FColor*>(rawImageData->Lock(LOCK_READ_ONLY));
 
+	int sqrdRes = resolution * resolution;
 	DecalHeightData.Init(0.0f, resolution * resolution);
-	for (int y = 0; y < resolution; y++)
+	for (int i = 0; i < sqrdRes; i++)
 	{
-		for (int x = 0; x < resolution; x++)
-		{
-			DecalHeightData[(y * resolution) + x] = formattedImageData[(y * resolution) + x].R / 255.0f;
-		}
+		DecalHeightData[i] = formattedImageData[i].R / 255.0f;
 	}
 
 	rawImageData->Unlock();
 }
 
-void UHeightmapDecal::ApplyDecalToNoiseMap(TArray<float>& noiseMap, int noiseMapResolution, float scale, int num, bool additive)
+void UOP_HeightmapDecal::ApplyDecalToNoiseMap(TArray<float>& noiseMap, int noiseMapResolution, float scale, int num, bool additive)
 {
 	if (DecalHeightData.Num() != Resolution * Resolution || DecalHeightData.Num() < 2)
 	{
