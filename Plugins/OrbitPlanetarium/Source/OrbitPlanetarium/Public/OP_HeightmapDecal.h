@@ -8,9 +8,6 @@
 
 class UTexture2D;
 
-/**
-*
-*/
 UCLASS()
 class ORBITPLANETARIUM_API UOP_HeightmapDecal : public UObject
 {

@@ -50,7 +50,10 @@ void UOP_NoiseCube::Init(int resolution,
 }
 
 
-void UOP_NoiseCube::Init(int resolution, EFractalNoiseType noiseType, int32 seed, float frequency, float fractalGain, EInterp interpolation, EFractalType fractalType, int32 octaves, float lacunarity, TArray<UOP_HeightmapDecal*> decals)
+void UOP_NoiseCube::Init(int resolution, EFractalNoiseType noiseType, int32 seed,
+	float frequency, float fractalGain, EInterp interpolation,
+	EFractalType fractalType, int32 octaves, float lacunarity,
+	TArray<UOP_HeightmapDecal*> decals)
 {
 	Init(resolution, noiseType, seed, frequency, fractalGain, interpolation, fractalType, octaves, lacunarity);
 	for (UOP_HeightmapDecal* hmd : decals)
@@ -77,7 +80,6 @@ void UOP_NoiseCube::Init(int resolution, EFractalNoiseType noiseType, int32 seed
 					break;
 				}
 			}
-
 			if (xp > 0) ApplyHeightDecalsToFace(XPosHeight, hmd, xp);
 			if (xn > 0) ApplyHeightDecalsToFace(XNegHeight, hmd, xn);
 			if (yp > 0) ApplyHeightDecalsToFace(YPosHeight, hmd, yp);
@@ -85,7 +87,6 @@ void UOP_NoiseCube::Init(int resolution, EFractalNoiseType noiseType, int32 seed
 			if (zp > 0) ApplyHeightDecalsToFace(ZPosHeight, hmd, zp);
 			if (zn > 0) ApplyHeightDecalsToFace(ZNegHeight, hmd, zn);
 		}
-
 	}
 }
 
@@ -200,8 +201,8 @@ TArray<float> UOP_NoiseCube::CreateFlatNoiseArray(UFastNoise * noiseGen, int res
 
 void UOP_NoiseCube::ApplyHeightDecalsToFace(TArray<float> &data, UOP_HeightmapDecal * decal, int num)
 {
-	float scale = FMath::RandRange(0.2f, 1.0f);
-	decal->ApplyDecalToNoiseMap(data, Resolution, scale, num, false);
+	float scale = FMath::RandRange(0.1f, 0.6f);
+	decal->ApplyDecalToNoiseMap(data, Resolution, scale, num, true);
 }
 
 float UOP_NoiseCube::GetXHeight(float perc, FVector pos)

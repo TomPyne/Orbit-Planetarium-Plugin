@@ -32,6 +32,7 @@ void UOP_HeightmapDecal::ApplyDecalToNoiseMap(TArray<float>& noiseMap, int noise
 	}
 	
 	int decalRes = Resolution * scale;
+
 	if (decalRes > noiseMapResolution)
 	{
 		UE_LOG(LogTemp, Warning, TEXT("UHeightmapDecal::ApplyDecalToNoiseMap attempting to place a decal bigger than the noisemap"));
@@ -44,15 +45,14 @@ void UOP_HeightmapDecal::ApplyDecalToNoiseMap(TArray<float>& noiseMap, int noise
 		return;
 	}
 
+	// For how many decals we want to paint
 	for (int i = 0; i < num; i++)
 	{
 		// Pick a random start location that fits the decal within the bounds of the noisemap
 		int startX = FMath::RandRange(0, (noiseMapResolution - decalRes) - 1);
 		int startY = FMath::RandRange(0, (noiseMapResolution - decalRes) - 1);
 
-		int increment = 1 / scale;
-		increment = increment < 1 ? 1 : increment;
-
+		// Record the starting pixel on the base noisemap
 		int baseY = startY;
 		int baseX = startX;
 		
@@ -71,10 +71,7 @@ void UOP_HeightmapDecal::ApplyDecalToNoiseMap(TArray<float>& noiseMap, int noise
 				{
 					noiseMap[(y * noiseMapResolution) + x] = DecalHeightData[index];
 				}
-
 			}
 		}
-	}
-
-	
+	}	
 }
