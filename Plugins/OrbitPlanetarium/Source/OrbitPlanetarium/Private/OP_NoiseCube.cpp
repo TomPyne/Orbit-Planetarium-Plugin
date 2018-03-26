@@ -200,7 +200,7 @@ TArray<float> UOP_NoiseCube::CreateFlatNoiseArray(UFastNoise * noiseGen, int res
 
 void UOP_NoiseCube::ApplyHeightDecalsToFace(TArray<float> &data, UOP_HeightmapDecal * decal, int num)
 {
-	float scale = FMath::RandRange(0.4f, 1.0f);
+	float scale = FMath::RandRange(0.2f, 1.0f);
 	decal->ApplyDecalToNoiseMap(data, Resolution, scale, num, false);
 }
 

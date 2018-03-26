@@ -56,8 +56,18 @@ void AOP_ProceduralPlanet::BeginPlay()
 
 void AOP_ProceduralPlanet::GenerateNoiseCubes()
 {
+	TArray<UOP_HeightmapDecal* > heightMapDecals;
+	// Create the HeightmapDecals
+	for (UTexture2D* decal : Decals)
+	{
+		UOP_HeightmapDecal* hmd = NewObject<UOP_HeightmapDecal>(this);
+		
+		hmd->CreateDecal(decal->GetSizeX(), decal, 10);
+		heightMapDecals.Add(hmd);
+	}
+
 	NoiseCube = NewObject<UOP_NoiseCube>(this);
-	NoiseCube->Init(256, NoiseType, Seed, Frequency, FractalGain, Interpolation, FractalType, Octaves, Lacunarity);
+	NoiseCube->Init(256, NoiseType, Seed, Frequency, FractalGain, Interpolation, FractalType, Octaves, Lacunarity, heightMapDecals);
 
 	RoughNoiseCube = NewObject<UOP_NoiseCube>(this);
 	RoughNoiseCube->Init(256, RoughNoiseType, Seed, RoughFrequency, RoughFractalGain, RoughInterpolation, RoughFractalType, RoughOctaves, RoughLacunarity);

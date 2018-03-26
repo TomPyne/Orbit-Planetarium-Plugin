@@ -30,8 +30,9 @@ void UOP_HeightmapDecal::ApplyDecalToNoiseMap(TArray<float>& noiseMap, int noise
 		UE_LOG(LogTemp, Warning, TEXT("UHeightmapDecal::ApplyDecalToNoiseMap DecalHeightData has not been initialised correctly first"));
 		return;
 	}
-
-	if (Resolution / scale > noiseMapResolution)
+	
+	int decalRes = Resolution * scale;
+	if (decalRes > noiseMapResolution)
 	{
 		UE_LOG(LogTemp, Warning, TEXT("UHeightmapDecal::ApplyDecalToNoiseMap attempting to place a decal bigger than the noisemap"));
 		return;
@@ -46,25 +47,34 @@ void UOP_HeightmapDecal::ApplyDecalToNoiseMap(TArray<float>& noiseMap, int noise
 	for (int i = 0; i < num; i++)
 	{
 		// Pick a random start location that fits the decal within the bounds of the noisemap
-		int startX = FMath::RandRange(0, (noiseMapResolution - Resolution) - 1);
-		int startY = FMath::RandRange(0, (noiseMapResolution - Resolution) - 1);
+		int startX = FMath::RandRange(0, (noiseMapResolution - decalRes) - 1);
+		int startY = FMath::RandRange(0, (noiseMapResolution - decalRes) - 1);
 
 		int increment = 1 / scale;
 		increment = increment < 1 ? 1 : increment;
 
-		for (int y = 0; y < Resolution; y = y + increment)
+		int baseY = startY;
+		int baseX = startX;
+		
+		int step = 1 / scale;
+
+		for (int y = startY; y < startY + decalRes; y++)
 		{
-			for (int x = 0; x < Resolution; x = x + increment)
+			for (int x = startX; x < startX + decalRes; x++)
 			{
+				int index = (((y - startY) * Resolution) * step) + ((x - startX) * step);
 				if (additive)
 				{
-					noiseMap[((startY + y) * noiseMapResolution) + (startX + x)] += DecalHeightData[(y * Resolution) + x];
+					noiseMap[(y * noiseMapResolution) + x] += DecalHeightData[index];
 				}
 				else
 				{
-					noiseMap[((startY + y) * noiseMapResolution) + (startX + x)] = DecalHeightData[(y * Resolution) + x];
+					noiseMap[(y * noiseMapResolution) + x] = DecalHeightData[index];
 				}
+
 			}
 		}
 	}
+
+	
 }

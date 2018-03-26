@@ -216,6 +216,9 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Cube")
 	float Boost = 1.4f;
 
+	UPROPERTY(EditAnywhere, Category = "Cube")
+	TArray<UTexture2D*> Decals;
+
 	// LOD ///////////////////////////////////////////////////////////////////
 
 	
