@@ -41,6 +41,7 @@ struct FNoiseGeneratorParameters
 };
 
 class UTexture2D;
+class UOP_HeightmapDecal;
 
 /**
  * 
@@ -62,6 +63,17 @@ public:
 		EFractalType fractalType,
 		int32 octaves,
 		float lacunarity);
+
+	void Init(int resolution,
+		EFractalNoiseType noiseType,
+		int32 seed,
+		float frequency,
+		float fractalGain,
+		EInterp interpolation,
+		EFractalType fractalType,
+		int32 octaves,
+		float lacunarity,
+		TArray<UOP_HeightmapDecal* > decals);
 	
 	// Sample the noise cube
 	float SampleNoiseCube(FVector normal);
@@ -121,6 +133,8 @@ protected:
 
 	// Uses the noise generator to create a heightmap array, samples between 0 and 1
 	TArray<float> CreateFlatNoiseArray(UFastNoise* noiseGen, int resolution, float offset);
+
+	void ApplyHeightDecalsToFace(TArray<float> &data, UOP_HeightmapDecal* decal, int num);
 
 private:
 
