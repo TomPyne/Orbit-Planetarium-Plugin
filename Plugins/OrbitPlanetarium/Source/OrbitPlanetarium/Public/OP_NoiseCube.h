@@ -78,21 +78,35 @@ public:
 	// Sample the noise cube
 	float SampleNoiseCube(FVector normal);
 
+	// Sample steepness from the noise cube
+	float SampleSteepness(FVector normal);
+
 	// Returns the 6 faces of the cube as UTextures
 	TArray<UTexture2D* > GetCubeTextures();
 
+	// Returns the 6 faces of the cube as steepness textures
+	TArray<UTexture2D* > GetSteepnessTextures();
+
 protected:
 
-	// Creates the textures
-	void GenerateNoiseCube();
+	// Creates the steepness data
+	void GenerateSteepnessData();
 
-	// The data
+	// Height data
 	TArray<float> XPosHeight;
 	TArray<float> XNegHeight;
 	TArray<float> YPosHeight;
 	TArray<float> YNegHeight;
 	TArray<float> ZPosHeight;
 	TArray<float> ZNegHeight;
+
+	// Steepness data
+	TArray<float> XPosSteepness;
+	TArray<float> XNegSteepness;
+	TArray<float> YPosSteepness;
+	TArray<float> YNegSteepness;
+	TArray<float> ZPosSteepness;
+	TArray<float> ZNegSteepness;
 
 	// Data stored as textures
 	UPROPERTY()
@@ -127,7 +141,7 @@ protected:
 	UPROPERTY()
 		UFastNoise* NoiseGenerator_ZNeg;
 
-	static UTexture2D* NoiseToTexture(TArray<float> data, int resolution, UObject* outer, FString name);
+	static UTexture2D* NoiseToTexture(const TArray<float> &data, int resolution, UObject* outer, FString name);
 	
 	UFastNoise* CreateNoiseGenerator(FNoiseGeneratorParameters params, int32 seed, UObject* outer);
 
@@ -148,4 +162,14 @@ private:
 	float GetXHeight(float perc, FVector pos);
 	float GetYHeight(float perc, FVector pos);
 	float GetZHeight(float perc, FVector pos);
+
+	
+
+	bool SteepnessDataGenerated();
+
+	// Populates the steepness data arrays based on the height data
+	static void CalculateSteepness(const TArray<float> &heightData, TArray<float> &outSteepness, int resolution);
+
+	// Samples a linear array with 2D coordinates, if no resolution is provided it is calculated (slower)
+	static float SampleData(int x, int y, const TArray<float> &data, int resolution = 0);
 };
