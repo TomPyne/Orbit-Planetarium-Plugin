@@ -110,6 +110,8 @@ TArray<UTexture2D*> UOP_NoiseCube::GetCubeTextures()
 
 TArray<UTexture2D*> UOP_NoiseCube::GetSteepnessTextures()
 {
+	if (!SteepnessDataGenerated()) { GenerateSteepnessData(); }
+
 	TArray<UTexture2D*> steepnessTextures;
 	steepnessTextures.Add(NoiseToTexture(XPosSteepness, Resolution, this, TEXT("XPosSteepness")));
 	steepnessTextures.Add(NoiseToTexture(XNegSteepness, Resolution, this, TEXT("XNegSteepness")));
