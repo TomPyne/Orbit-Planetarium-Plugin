@@ -4,6 +4,7 @@
 #include "Engine/Texture2D.h"
 #include "ImageUtils.h"
 #include "UnrealFastNoisePlugin/Public/UFNBlueprintFunctionLibrary.h"
+#include "OP_HeightmapDecal.h"
 
 
 void UOP_NoiseCube::Init(int resolution,
@@ -48,6 +49,46 @@ void UOP_NoiseCube::Init(int resolution,
 	ZNegHeight = CreateFlatNoiseArray(NoiseGenerator_ZNeg, resolution, 5.0f);
 }
 
+
+void UOP_NoiseCube::Init(int resolution, EFractalNoiseType noiseType, int32 seed,
+	float frequency, float fractalGain, EInterp interpolation,
+	EFractalType fractalType, int32 octaves, float lacunarity,
+	TArray<UOP_HeightmapDecal*> decals)
+{
+	Init(resolution, noiseType, seed, frequency, fractalGain, interpolation, fractalType, octaves, lacunarity);
+	for (UOP_HeightmapDecal* hmd : decals)
+	{
+		if (hmd != nullptr)
+		{
+			int xn, xp, yn, yp, zn, zp;
+			xn = xp = yn = yp = zn = zp = 0;
+			for (int i = 0; i < hmd->MaxFrequency; i++)
+			{
+				switch (FMath::RandRange(0, 5))
+				{
+				case 0:	xp++;
+					break;
+				case 1:	xn++;
+					break;
+				case 2:	yp++;
+					break;
+				case 3:	yn++;
+					break;
+				case 4:	zp++;
+					break;
+				case 5:	zn++;
+					break;
+				}
+			}
+			if (xp > 0) ApplyHeightDecalsToFace(XPosHeight, hmd, xp);
+			if (xn > 0) ApplyHeightDecalsToFace(XNegHeight, hmd, xn);
+			if (yp > 0) ApplyHeightDecalsToFace(YPosHeight, hmd, yp);
+			if (yn > 0) ApplyHeightDecalsToFace(YNegHeight, hmd, yn);
+			if (zp > 0) ApplyHeightDecalsToFace(ZPosHeight, hmd, zp);
+			if (zn > 0) ApplyHeightDecalsToFace(ZNegHeight, hmd, zn);
+		}
+	}
+}
 
 float UOP_NoiseCube::SampleNoiseCube(FVector normal)
 {
@@ -156,6 +197,12 @@ TArray<float> UOP_NoiseCube::CreateFlatNoiseArray(UFastNoise * noiseGen, int res
 	}
 
 	return flatArray;
+}
+
+void UOP_NoiseCube::ApplyHeightDecalsToFace(TArray<float> &data, UOP_HeightmapDecal * decal, int num)
+{
+	float scale = FMath::RandRange(0.1f, 0.6f);
+	decal->ApplyDecalToNoiseMap(data, Resolution, scale, num, true);
 }
 
 float UOP_NoiseCube::GetXHeight(float perc, FVector pos)
