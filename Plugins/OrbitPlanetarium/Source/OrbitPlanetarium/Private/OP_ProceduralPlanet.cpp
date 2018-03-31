@@ -215,6 +215,8 @@ void AOP_ProceduralPlanet::GeneratePlanet(bool bIgnoreLOD)
 			// forcing value to 0
 			if (vcValue >= 1 - MinWaterLevel) vcValue = 0.95f;
 
+			if (NoiseCube->SampleSteepness(normal) > 0.5f) vcValue = 0.0f;
+
 			vcValue = FMath::Clamp(vcValue, 0.0f, 1.0f);
 			FLinearColor vColour = FLinearColor(vcValue, vcValue, vcValue);
 			planetData->VertexColours.Add(vColour);
@@ -297,8 +299,10 @@ void AOP_ProceduralPlanet::GeneratePlanet(bool bIgnoreLOD)
 
 	// Generate image from heightmap
 	GenerateHeatMapTex(planetData);
+	GenerateSteepnessMapTex(planetData);
 
-
+	cubemap = NoiseCube->GetCubeTextures();
+	Steepnessmap = NoiseCube->GetSteepnessTextures();
 }
 
 void AOP_ProceduralPlanet::ClearPlanet()
@@ -433,6 +437,38 @@ void AOP_ProceduralPlanet::GenerateHeatMapTex(UOP_PlanetData* planetData)
 		colorMap,
 		this,
 		TEXT("CombinedNoise"),
+		EObjectFlags::RF_Transient,
+		params);
+}
+
+void AOP_ProceduralPlanet::GenerateSteepnessMapTex(UOP_PlanetData * planetData)
+{
+	if (NoiseCube == nullptr) { return; }
+
+	FVector origin = GetActorLocation();
+
+	int resolution = FMath::Sqrt(planetData->UV.Num());
+	TArray<FColor> colorMap;
+	colorMap.Init(FColor::Black, resolution * resolution);
+	for (int i = 0; i < planetData->UV.Num(); i++)
+	{
+		float steepness = NoiseCube->SampleSteepness(origin - planetData->Vertices[i]);
+		int xPos = (((planetData->UV[i].X / PI) + 1.0f) / 2.0f) * resolution;
+		int yPos = (((planetData->UV[i].Y / PI) + 1.0f) / 2.0f) * resolution;
+		int aPos = ((yPos)* resolution) + (xPos);
+		if (aPos >= 0 && aPos < colorMap.Num())
+		{
+			colorMap[((yPos)* resolution) + (xPos)] = FColor(steepness * 255, steepness * 255, steepness * 255);
+		}
+		
+	}
+
+	FCreateTexture2DParameters params;
+	CombinedSteepnessTex = FImageUtils::CreateTexture2D(resolution,
+		resolution,
+		colorMap,
+		this,
+		TEXT("CombinedSteepness"),
 		EObjectFlags::RF_Transient,
 		params);
 }

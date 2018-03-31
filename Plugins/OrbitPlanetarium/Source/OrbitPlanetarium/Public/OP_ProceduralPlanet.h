@@ -211,6 +211,9 @@ public:
 	TArray<UTexture2D*> cubemap;
 
 	UPROPERTY(EditAnywhere, Category = "Cube")
+	TArray<UTexture2D*> Steepnessmap;
+
+	UPROPERTY(EditAnywhere, Category = "Cube")
 	float RoughnessInfluence = 0.2f;
 
 	UPROPERTY(EditAnywhere, Category = "Cube")
@@ -243,6 +246,9 @@ public:
 
 	UPROPERTY(VisibleAnywhere, Category = TestTex)
 	UTexture2D* CombinedNoiseTex;
+
+	UPROPERTY(VisibleAnywhere, Category = TestTex)
+	UTexture2D* CombinedSteepnessTex;
 
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
@@ -283,6 +289,8 @@ protected:
 	void CheckLODRange(bool bForceGeneration);
 
 	void GenerateHeatMapTex(UOP_PlanetData* planetData);
+
+	void GenerateSteepnessMapTex(UOP_PlanetData* planetData);
 
 private:
 };

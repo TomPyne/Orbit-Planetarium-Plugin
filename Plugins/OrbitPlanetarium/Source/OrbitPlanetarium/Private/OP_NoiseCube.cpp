@@ -108,12 +108,32 @@ TArray<UTexture2D*> UOP_NoiseCube::GetCubeTextures()
 	return cubeTextures;
 }
 
-void UOP_NoiseCube::GenerateNoiseCube()
+TArray<UTexture2D*> UOP_NoiseCube::GetSteepnessTextures()
 {
+	if (!SteepnessDataGenerated()) { GenerateSteepnessData(); }
 
+	TArray<UTexture2D*> steepnessTextures;
+	steepnessTextures.Add(NoiseToTexture(XPosSteepness, Resolution, this, TEXT("XPosSteepness")));
+	steepnessTextures.Add(NoiseToTexture(XNegSteepness, Resolution, this, TEXT("XNegSteepness")));
+	steepnessTextures.Add(NoiseToTexture(YPosSteepness, Resolution, this, TEXT("YPosSteepness")));
+	steepnessTextures.Add(NoiseToTexture(YNegSteepness, Resolution, this, TEXT("YNegSteepness")));
+	steepnessTextures.Add(NoiseToTexture(ZPosSteepness, Resolution, this, TEXT("ZPosSteepness")));
+	steepnessTextures.Add(NoiseToTexture(ZNegSteepness, Resolution, this, TEXT("ZNegSteepness")));
+
+	return steepnessTextures;
 }
 
-UTexture2D * UOP_NoiseCube::NoiseToTexture(TArray<float> data, int resolution, UObject* outer, FString name)
+void UOP_NoiseCube::GenerateSteepnessData()
+{
+	CalculateSteepness(XPosHeight, XPosSteepness, Resolution);
+	CalculateSteepness(XNegHeight, XNegSteepness, Resolution);
+	CalculateSteepness(YPosHeight, YPosSteepness, Resolution);
+	CalculateSteepness(YNegHeight, YNegSteepness, Resolution);
+	CalculateSteepness(ZPosHeight, ZPosSteepness, Resolution);
+	CalculateSteepness(ZNegHeight, ZNegSteepness, Resolution);
+}
+
+UTexture2D * UOP_NoiseCube::NoiseToTexture(const TArray<float> &data, int resolution, UObject* outer, FString name)
 {
 	TArray<FColor> colorMap;
 	colorMap.Init(FColor::Black, resolution * resolution);
@@ -233,8 +253,6 @@ float UOP_NoiseCube::GetYHeight(float perc, FVector pos)
 
 float UOP_NoiseCube::GetZHeight(float perc, FVector pos)
 {
-	//int32 x = FMath::Abs(pos.X / ResStep);
-	//int32 y = FMath::Abs(pos.Y / ResStep);
 	int32 x = ((pos.X + 1.0f) / 2.0f) / ResStep;
 	int32 y = ((pos.Y + 1.0f) / 2.0f) / ResStep;
 	int32 index = ((y * Resolution) + x);
@@ -244,4 +262,67 @@ float UOP_NoiseCube::GetZHeight(float perc, FVector pos)
 		return 0.0f;
 	}
 	return FMath::Abs(perc) * (perc > 0.0f ? ZPosHeight[index] : ZNegHeight[FMath::Abs(index)]);
+}
+
+float UOP_NoiseCube::SampleSteepness(FVector normal)
+{
+	if (!SteepnessDataGenerated()) { GenerateSteepnessData(); }
+
+	normal.Normalize(); // Ensure normalised so array index is calculated safely
+	
+	FVector adjNrm = ((normal + 1.0f) / 2.0f) / ResStep; // -1..1 to 0..1
+
+	float xSteepness = SampleData(adjNrm.Y, adjNrm.Z, adjNrm.X > 0.5f ? XPosSteepness : XNegSteepness, Resolution);
+	float ySteepness = SampleData(adjNrm.X, adjNrm.Z, adjNrm.Y > 0.5f ? YPosSteepness : YNegSteepness, Resolution);
+	float zSteepness = SampleData(adjNrm.X, adjNrm.Y, adjNrm.Z > 0.5f ? ZPosSteepness : ZNegSteepness, Resolution);
+
+	// Because steepness is calculated in the 0..1 range, return the average
+
+	return ((fabs(normal.X) * xSteepness) + (fabs(normal.Y) * ySteepness) + (fabs(normal.Z) * zSteepness)) / 3.0f;
+}
+
+bool UOP_NoiseCube::SteepnessDataGenerated()
+{
+	return XPosSteepness.Num() > 0 && XNegSteepness.Num() > 0 &&
+		YPosSteepness.Num() > 0 && YNegSteepness.Num() > 0 &&
+		ZPosSteepness.Num() > 0 && ZNegSteepness.Num() > 0;
+}
+
+void UOP_NoiseCube::CalculateSteepness(const TArray<float> &heightData, TArray<float> &outSteepness, int resolution)
+{
+	// Error checks
+	if (heightData.Num() < 1)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("UOP_NoiseCube::CalculateSteepness heightData array empty"));
+		return;
+	}
+	else if (heightData.Num() != resolution * resolution)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("UOP_NoiseCube::CalculateSteepness Incorrect resolution provided"));
+		return;
+	}
+
+	// Init the array to the size of the resolution
+	outSteepness.Init(0.0f, resolution * resolution);
+
+	for (int y = 0; y < resolution - 1; y++)
+	{
+		for (int x = 0; x < resolution - 1; x++)
+		{
+			// Sobel filter
+			// https://gamedev.stackexchange.com/questions/89824/how-can-i-compute-a-steepness-value-for-height-map-cells
+			float dx = heightData[(y * resolution) + (x + 1)];
+			float dy = heightData[((y + 1) * resolution) + x];
+
+			outSteepness[(y * resolution) + x] = fabs(dx) + fabs(dy);
+		}
+	}
+}
+
+float UOP_NoiseCube::SampleData(int x, int y, const TArray<float>& data, int resolution)
+{
+	resolution = resolution * resolution == data.Num() ? resolution : sqrt(data.Num());
+	x = FMath::Clamp(x, 0, resolution - 1);
+	y = FMath::Clamp(y, 0, resolution - 1);
+	return data[(y * resolution) + x];
 }
