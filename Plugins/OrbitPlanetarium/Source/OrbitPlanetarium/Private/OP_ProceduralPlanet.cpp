@@ -215,6 +215,8 @@ void AOP_ProceduralPlanet::GeneratePlanet(bool bIgnoreLOD)
 			// forcing value to 0
 			if (vcValue >= 1 - MinWaterLevel) vcValue = 0.95f;
 
+			if (NoiseCube->SampleSteepness(normal) > 0.5f) vcValue = 0.0f;
+
 			vcValue = FMath::Clamp(vcValue, 0.0f, 1.0f);
 			FLinearColor vColour = FLinearColor(vcValue, vcValue, vcValue);
 			planetData->VertexColours.Add(vColour);
