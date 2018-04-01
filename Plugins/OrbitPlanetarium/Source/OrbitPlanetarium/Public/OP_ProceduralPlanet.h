@@ -81,7 +81,10 @@ public:
 	TArray<FVector2D> UV;
 
 	UPROPERTY()
-	TArray<FLinearColor> VertexColours;
+	TArray<FLinearColor> LinearVertexColours;
+
+	UPROPERTY()
+	TArray<FColor> VertexColours;
 
 	UPROPERTY()
 	TArray<FProcMeshTangent> Tangents;
@@ -273,6 +276,10 @@ protected:
 	UPROPERTY()
 	class UProceduralMeshComponent* ProcMeshComponent;
 
+	// THe runtime mesh component;
+	UPROPERTY()
+	class URuntimeMeshComponent* RTMComponent;
+
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 
@@ -293,4 +300,8 @@ protected:
 	void GenerateSteepnessMapTex(UOP_PlanetData* planetData);
 
 private:
+
+	TArray<float> SobelVertexSteepness;
+
+
 };

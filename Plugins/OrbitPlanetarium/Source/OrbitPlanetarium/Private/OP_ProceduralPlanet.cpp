@@ -10,6 +10,7 @@
 #include "ImageUtils.h"
 #include "Engine/Texture2D.h"
 #include "OP_NoiseCube.h"
+#include "RuntimeMeshComponent.h"
 
 FString UOP_PlanetData::ToString()
 {
@@ -27,8 +28,8 @@ AOP_ProceduralPlanet::AOP_ProceduralPlanet()
  	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
 
-	ProcMeshComponent = CreateDefaultSubobject<UProceduralMeshComponent>(TEXT("Mesh"));
-	RootComponent = ProcMeshComponent;
+	RTMComponent = CreateDefaultSubobject<URuntimeMeshComponent>(TEXT("Mesh"));
+	RootComponent = RTMComponent;
 }
 
 // Called when the game starts or when spawned
@@ -82,14 +83,22 @@ void AOP_ProceduralPlanet::Tick(float DeltaTime)
 
 void AOP_ProceduralPlanet::GeneratePlanet(bool bIgnoreLOD)
 {
+	float sTime = FPlatformTime::Seconds();
+	float dTime = 0.0f;
+	float lTime = 0.0f;
 	// If no procedural mesh component no point executing
-	if (ProcMeshComponent == nullptr) { return; }
+	if (RTMComponent == nullptr) { return; }
+
+	TArray<FRuntimeMeshTangent> rtTangents;
 
 	// If there is no noiseCube or a seed hasn't been set, generate them
 	if (NoiseCube == nullptr || RoughNoiseCube == nullptr || !bUseSeed)
 	{
 		GenerateNoiseCubes();
 	}
+	
+	dTime = FPlatformTime::Seconds();
+	UE_LOG(LogTemp, Warning, TEXT("Stage , NoiseCube created: t = %f , d = %f"), (FPlatformTime::Seconds() - sTime), dTime);
 
 	UOP_PlanetData* planetData = TryGetCachedLOD(currentLOD);
 	if (bIgnoreLOD)
@@ -170,6 +179,32 @@ void AOP_ProceduralPlanet::GeneratePlanet(bool bIgnoreLOD)
 			faces = faces2;
 		}
 
+		lTime = FPlatformTime::Seconds() - sTime;
+		UE_LOG(LogTemp, Warning, TEXT("Stage 1, Vertices generated and subdivided: t= %f , d = %f"), (FPlatformTime::Seconds() - sTime), (FPlatformTime::Seconds() - dTime));
+		dTime = FPlatformTime::Seconds();
+
+		// Create the Triangles
+		for (FOP_TriangleIndices tri : faces)
+		{
+			planetData->Triangles.Add(tri.V1);
+			planetData->Triangles.Add(tri.V2);
+			planetData->Triangles.Add(tri.V3);
+		}
+
+		UE_LOG(LogTemp, Warning, TEXT("Tris created: %f , d = %f"), (FPlatformTime::Seconds() - sTime), (FPlatformTime::Seconds() - dTime));
+		dTime = FPlatformTime::Seconds();
+
+		//// if the searched for vert hasn't been discovered yet start at the index from the last search
+		//int highestVert = 0;
+		//int lastIndex;
+		//for (int i = 0; i, planetData->Vertices.Num(); i++)
+		//{
+		//	// Find the triangle
+		//	for (FOP_TriangleIndices tri : faces)
+		//	{
+
+		//	}
+		//}
 
 		FVector position = GetActorLocation();
 
@@ -215,11 +250,13 @@ void AOP_ProceduralPlanet::GeneratePlanet(bool bIgnoreLOD)
 			// forcing value to 0
 			if (vcValue >= 1 - MinWaterLevel) vcValue = 0.95f;
 
-			if (NoiseCube->SampleSteepness(normal) > 0.5f) vcValue = 0.0f;
+			float steepness = NoiseCube->SampleSteepness(normal);
 
 			vcValue = FMath::Clamp(vcValue, 0.0f, 1.0f);
-			FLinearColor vColour = FLinearColor(vcValue, vcValue, vcValue);
+			FLinearColor vlColour = FLinearColor(vcValue, vcValue, vcValue);
+			FColor vColour = FColor(vcValue * 255, vcValue * 255, vcValue * 255);
 			planetData->VertexColours.Add(vColour);
+			planetData->LinearVertexColours.Add(vlColour);
 
 			// Redistribution
 			height < 0.0f ? FMath::Pow(height * -1.0f, Redistribution) * -1.0f : FMath::Pow(height, Redistribution);
@@ -233,6 +270,9 @@ void AOP_ProceduralPlanet::GeneratePlanet(bool bIgnoreLOD)
 			PolarVertices3D.Add(sCoords);
 		}
 
+		UE_LOG(LogTemp, Warning, TEXT("Stage 2, vertex position modified: %f , d = %f"), (FPlatformTime::Seconds() - sTime), (FPlatformTime::Seconds() - dTime));
+		dTime = FPlatformTime::Seconds();
+
 		// Empty the vertex array and repopulate it with the polar vertices
 		FVector lastV = FVector::ZeroVector;
 		planetData->Vertices.Empty();
@@ -243,16 +283,12 @@ void AOP_ProceduralPlanet::GeneratePlanet(bool bIgnoreLOD)
 
 		}
 
-		// Create the Triangles
-		for (FOP_TriangleIndices tri : faces)
-		{
-			planetData->Triangles.Add(tri.V1);
-			planetData->Triangles.Add(tri.V2);
-			planetData->Triangles.Add(tri.V3);
-		}
+		UE_LOG(LogTemp, Warning, TEXT("Stage 3, Spherical to cartesian: %f , d = %f"), (FPlatformTime::Seconds() - sTime), (FPlatformTime::Seconds() - dTime));
+		dTime = FPlatformTime::Seconds();
 
 		// Calculate tangents
 		TArray<FVector> tangents;
+		
 		tangents.Init(FVector::ZeroVector, planetData->Vertices.Num());
 		for (int i = 0; i < planetData->Triangles.Num();)
 		{
@@ -263,32 +299,40 @@ void AOP_ProceduralPlanet::GeneratePlanet(bool bIgnoreLOD)
 			FVector tangent = (p1 - p0).GetSafeNormal();
 			tangents[planetData->Triangles[i]] = tangent;
 			planetData->Tangents.Add(FProcMeshTangent(tangent, true));
+			rtTangents.Add(FRuntimeMeshTangent(tangent, true));
 			}
 			i += 3;
 		}
+
+		UE_LOG(LogTemp, Warning, TEXT("Stage 5, Tangents calculated: %f , d = %f"), (FPlatformTime::Seconds() - sTime), (FPlatformTime::Seconds() - dTime));
+		dTime = FPlatformTime::Seconds();
 		
 	}
 
 
 
 	UE_LOG(LogTemp, Warning, TEXT("MeshData: %s"), *planetData->ToString());
+	dTime = FPlatformTime::Seconds();
 
 	// Create the mesh
-	ProcMeshComponent->ClearAllMeshSections();
-	ProcMeshComponent->CreateMeshSection_LinearColor(
+	RTMComponent->ClearAllMeshSections();
+	RTMComponent->CreateMeshSection(
 		0,
 		planetData->Vertices,
 		planetData->Triangles,
 		planetData->Normals,
 		planetData->UV,
 		planetData->VertexColours,
-		planetData->Tangents,
+		rtTangents,
 		false);
+
+	UE_LOG(LogTemp, Warning, TEXT("Stage 6, Mesh generated: %f , d = %f"), (FPlatformTime::Seconds() - sTime), (FPlatformTime::Seconds() - dTime));
+	dTime = FPlatformTime::Seconds();
 
 	// Set the material
 	if (Material)
 	{
-		ProcMeshComponent->SetMaterial(0, Material);
+		RTMComponent->SetMaterial(0, Material);
 	}
 
 	// Try to cache the LOD
@@ -301,15 +345,20 @@ void AOP_ProceduralPlanet::GeneratePlanet(bool bIgnoreLOD)
 	GenerateHeatMapTex(planetData);
 	GenerateSteepnessMapTex(planetData);
 
+	
+
 	cubemap = NoiseCube->GetCubeTextures();
 	Steepnessmap = NoiseCube->GetSteepnessTextures();
+
+	UE_LOG(LogTemp, Warning, TEXT("Stage 7, Textures generated: t= %f , d = "), (FPlatformTime::Seconds() - sTime), (FPlatformTime::Seconds() - dTime));
+	dTime = FPlatformTime::Seconds();
 }
 
 void AOP_ProceduralPlanet::ClearPlanet()
 {
-	if (ProcMeshComponent != nullptr)
+	if (RTMComponent != nullptr)
 	{
-		ProcMeshComponent->ClearAllMeshSections();
+		RTMComponent->ClearAllMeshSections();
 	}
 }
 
@@ -420,7 +469,7 @@ void AOP_ProceduralPlanet::GenerateHeatMapTex(UOP_PlanetData* planetData)
 	// Generate flat array of colors from vertexColor and UV arrays
 	for (int i = 0; i < planetData->UV.Num(); i++)
 	{
-		FColor col = planetData->VertexColours[i].ToFColor(false);
+		FColor col = planetData->VertexColours[i];
 		int xPos = (((planetData->UV[i].X / PI) + 1.0f) / 2.0f) * resolution;
 		int yPos = (((planetData->UV[i].Y / PI) + 1.0f) / 2.0f) * resolution;
 		int aPos = ((yPos)* resolution) + (xPos);

@@ -30,7 +30,8 @@ public class OrbitPlanetarium : ModuleRules
 				"Core",
 				// ... add other public dependencies that you statically link with here ...
                 "UnrealFastNoisePlugin",
-                "ProceduralMeshComponent"
+                "ProceduralMeshComponent",
+                "RuntimeMeshComponent"
             }
 			);
 			
