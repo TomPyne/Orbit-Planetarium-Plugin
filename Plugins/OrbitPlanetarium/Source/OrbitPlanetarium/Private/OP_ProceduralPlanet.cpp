@@ -183,6 +183,29 @@ void AOP_ProceduralPlanet::GeneratePlanet(bool bIgnoreLOD)
 		UE_LOG(LogTemp, Warning, TEXT("Stage 1, Vertices generated and subdivided: t= %f , d = %f"), (FPlatformTime::Seconds() - sTime), (FPlatformTime::Seconds() - dTime));
 		dTime = FPlatformTime::Seconds();
 
+		// Create the Triangles
+		for (FOP_TriangleIndices tri : faces)
+		{
+			planetData->Triangles.Add(tri.V1);
+			planetData->Triangles.Add(tri.V2);
+			planetData->Triangles.Add(tri.V3);
+		}
+
+		UE_LOG(LogTemp, Warning, TEXT("Tris created: %f , d = %f"), (FPlatformTime::Seconds() - sTime), (FPlatformTime::Seconds() - dTime));
+		dTime = FPlatformTime::Seconds();
+
+		//// if the searched for vert hasn't been discovered yet start at the index from the last search
+		//int highestVert = 0;
+		//int lastIndex;
+		//for (int i = 0; i, planetData->Vertices.Num(); i++)
+		//{
+		//	// Find the triangle
+		//	for (FOP_TriangleIndices tri : faces)
+		//	{
+
+		//	}
+		//}
+
 		FVector position = GetActorLocation();
 
 		TArray<FOP_SphericalCoords> PolarVertices3D;
@@ -227,7 +250,7 @@ void AOP_ProceduralPlanet::GeneratePlanet(bool bIgnoreLOD)
 			// forcing value to 0
 			if (vcValue >= 1 - MinWaterLevel) vcValue = 0.95f;
 
-			if (NoiseCube->SampleSteepness(normal) > 0.5f) vcValue = 0.0f;
+			float steepness = NoiseCube->SampleSteepness(normal);
 
 			vcValue = FMath::Clamp(vcValue, 0.0f, 1.0f);
 			FLinearColor vlColour = FLinearColor(vcValue, vcValue, vcValue);
@@ -261,17 +284,6 @@ void AOP_ProceduralPlanet::GeneratePlanet(bool bIgnoreLOD)
 		}
 
 		UE_LOG(LogTemp, Warning, TEXT("Stage 3, Spherical to cartesian: %f , d = %f"), (FPlatformTime::Seconds() - sTime), (FPlatformTime::Seconds() - dTime));
-		dTime = FPlatformTime::Seconds();
-
-		// Create the Triangles
-		for (FOP_TriangleIndices tri : faces)
-		{
-			planetData->Triangles.Add(tri.V1);
-			planetData->Triangles.Add(tri.V2);
-			planetData->Triangles.Add(tri.V3);
-		}
-
-		UE_LOG(LogTemp, Warning, TEXT("Stage 4, Tris created: %f , d = %f"), (FPlatformTime::Seconds() - sTime), (FPlatformTime::Seconds() - dTime));
 		dTime = FPlatformTime::Seconds();
 
 		// Calculate tangents

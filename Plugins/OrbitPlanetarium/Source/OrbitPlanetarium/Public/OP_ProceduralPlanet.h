@@ -300,4 +300,8 @@ protected:
 	void GenerateSteepnessMapTex(UOP_PlanetData* planetData);
 
 private:
+
+	TArray<float> SobelVertexSteepness;
+
+
 };
