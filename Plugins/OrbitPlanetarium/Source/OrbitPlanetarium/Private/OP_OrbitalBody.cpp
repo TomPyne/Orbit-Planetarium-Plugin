@@ -5,6 +5,7 @@
 #include "Components/MeshComponent.h"
 #include "OP_OrbitSpline.h"
 #include "Engine.h"
+#include "RuntimeMeshComponent.h"
 
 
 // Sets default values

@@ -8,7 +8,7 @@ public class Orbit : ModuleRules
 	{
 		PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
 	
-		PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore", "UnrealFastNoisePlugin", "ProceduralMeshComponent", "RenderCore", "OrbitPlanetarium" });
+		PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore", "UnrealFastNoisePlugin", "ProceduralMeshComponent", "RenderCore", "OrbitPlanetarium", "RuntimeMeshComponent" });
 
 
         PrivateDependencyModuleNames.AddRange(new string[] {  });
