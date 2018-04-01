@@ -10,6 +10,7 @@
 #include "ImageUtils.h"
 #include "Engine/Texture2D.h"
 #include "OP_NoiseCube.h"
+#include "RuntimeMeshComponent.h"
 
 FString UOP_PlanetData::ToString()
 {
@@ -27,8 +28,8 @@ AOP_ProceduralPlanet::AOP_ProceduralPlanet()
  	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
 
-	ProcMeshComponent = CreateDefaultSubobject<UProceduralMeshComponent>(TEXT("Mesh"));
-	RootComponent = ProcMeshComponent;
+	RTMComponent = CreateDefaultSubobject<URuntimeMeshComponent>(TEXT("Mesh"));
+	RootComponent = RTMComponent;
 }
 
 // Called when the game starts or when spawned
@@ -83,7 +84,9 @@ void AOP_ProceduralPlanet::Tick(float DeltaTime)
 void AOP_ProceduralPlanet::GeneratePlanet(bool bIgnoreLOD)
 {
 	// If no procedural mesh component no point executing
-	if (ProcMeshComponent == nullptr) { return; }
+	if (RTMComponent == nullptr) { return; }
+
+	TArray<FRuntimeMeshTangent> rtTangents;
 
 	// If there is no noiseCube or a seed hasn't been set, generate them
 	if (NoiseCube == nullptr || RoughNoiseCube == nullptr || !bUseSeed)
@@ -218,8 +221,10 @@ void AOP_ProceduralPlanet::GeneratePlanet(bool bIgnoreLOD)
 			if (NoiseCube->SampleSteepness(normal) > 0.5f) vcValue = 0.0f;
 
 			vcValue = FMath::Clamp(vcValue, 0.0f, 1.0f);
-			FLinearColor vColour = FLinearColor(vcValue, vcValue, vcValue);
+			FLinearColor vlColour = FLinearColor(vcValue, vcValue, vcValue);
+			FColor vColour = FColor(vcValue * 255, vcValue * 255, vcValue * 255);
 			planetData->VertexColours.Add(vColour);
+			planetData->LinearVertexColours.Add(vlColour);
 
 			// Redistribution
 			height < 0.0f ? FMath::Pow(height * -1.0f, Redistribution) * -1.0f : FMath::Pow(height, Redistribution);
@@ -253,6 +258,7 @@ void AOP_ProceduralPlanet::GeneratePlanet(bool bIgnoreLOD)
 
 		// Calculate tangents
 		TArray<FVector> tangents;
+		
 		tangents.Init(FVector::ZeroVector, planetData->Vertices.Num());
 		for (int i = 0; i < planetData->Triangles.Num();)
 		{
@@ -263,6 +269,7 @@ void AOP_ProceduralPlanet::GeneratePlanet(bool bIgnoreLOD)
 			FVector tangent = (p1 - p0).GetSafeNormal();
 			tangents[planetData->Triangles[i]] = tangent;
 			planetData->Tangents.Add(FProcMeshTangent(tangent, true));
+			rtTangents.Add(FRuntimeMeshTangent(tangent, true));
 			}
 			i += 3;
 		}
@@ -274,21 +281,23 @@ void AOP_ProceduralPlanet::GeneratePlanet(bool bIgnoreLOD)
 	UE_LOG(LogTemp, Warning, TEXT("MeshData: %s"), *planetData->ToString());
 
 	// Create the mesh
-	ProcMeshComponent->ClearAllMeshSections();
-	ProcMeshComponent->CreateMeshSection_LinearColor(
+	RTMComponent->ClearAllMeshSections();
+	RTMComponent->CreateMeshSection(
 		0,
 		planetData->Vertices,
 		planetData->Triangles,
 		planetData->Normals,
 		planetData->UV,
 		planetData->VertexColours,
-		planetData->Tangents,
+		rtTangents,
 		false);
+
+
 
 	// Set the material
 	if (Material)
 	{
-		ProcMeshComponent->SetMaterial(0, Material);
+		RTMComponent->SetMaterial(0, Material);
 	}
 
 	// Try to cache the LOD
@@ -307,9 +316,9 @@ void AOP_ProceduralPlanet::GeneratePlanet(bool bIgnoreLOD)
 
 void AOP_ProceduralPlanet::ClearPlanet()
 {
-	if (ProcMeshComponent != nullptr)
+	if (RTMComponent != nullptr)
 	{
-		ProcMeshComponent->ClearAllMeshSections();
+		RTMComponent->ClearAllMeshSections();
 	}
 }
 
@@ -420,7 +429,7 @@ void AOP_ProceduralPlanet::GenerateHeatMapTex(UOP_PlanetData* planetData)
 	// Generate flat array of colors from vertexColor and UV arrays
 	for (int i = 0; i < planetData->UV.Num(); i++)
 	{
-		FColor col = planetData->VertexColours[i].ToFColor(false);
+		FColor col = planetData->VertexColours[i];
 		int xPos = (((planetData->UV[i].X / PI) + 1.0f) / 2.0f) * resolution;
 		int yPos = (((planetData->UV[i].Y / PI) + 1.0f) / 2.0f) * resolution;
 		int aPos = ((yPos)* resolution) + (xPos);
