@@ -83,6 +83,9 @@ void AOP_ProceduralPlanet::Tick(float DeltaTime)
 
 void AOP_ProceduralPlanet::GeneratePlanet(bool bIgnoreLOD)
 {
+	float sTime = FPlatformTime::Seconds();
+	float dTime = 0.0f;
+	float lTime = 0.0f;
 	// If no procedural mesh component no point executing
 	if (RTMComponent == nullptr) { return; }
 
@@ -93,6 +96,9 @@ void AOP_ProceduralPlanet::GeneratePlanet(bool bIgnoreLOD)
 	{
 		GenerateNoiseCubes();
 	}
+	
+	dTime = FPlatformTime::Seconds();
+	UE_LOG(LogTemp, Warning, TEXT("Stage , NoiseCube created: t = %f , d = %f"), (FPlatformTime::Seconds() - sTime), dTime);
 
 	UOP_PlanetData* planetData = TryGetCachedLOD(currentLOD);
 	if (bIgnoreLOD)
@@ -173,6 +179,9 @@ void AOP_ProceduralPlanet::GeneratePlanet(bool bIgnoreLOD)
 			faces = faces2;
 		}
 
+		lTime = FPlatformTime::Seconds() - sTime;
+		UE_LOG(LogTemp, Warning, TEXT("Stage 1, Vertices generated and subdivided: t= %f , d = %f"), (FPlatformTime::Seconds() - sTime), (FPlatformTime::Seconds() - dTime));
+		dTime = FPlatformTime::Seconds();
 
 		FVector position = GetActorLocation();
 
@@ -238,6 +247,9 @@ void AOP_ProceduralPlanet::GeneratePlanet(bool bIgnoreLOD)
 			PolarVertices3D.Add(sCoords);
 		}
 
+		UE_LOG(LogTemp, Warning, TEXT("Stage 2, vertex position modified: %f , d = %f"), (FPlatformTime::Seconds() - sTime), (FPlatformTime::Seconds() - dTime));
+		dTime = FPlatformTime::Seconds();
+
 		// Empty the vertex array and repopulate it with the polar vertices
 		FVector lastV = FVector::ZeroVector;
 		planetData->Vertices.Empty();
@@ -248,6 +260,9 @@ void AOP_ProceduralPlanet::GeneratePlanet(bool bIgnoreLOD)
 
 		}
 
+		UE_LOG(LogTemp, Warning, TEXT("Stage 3, Spherical to cartesian: %f , d = %f"), (FPlatformTime::Seconds() - sTime), (FPlatformTime::Seconds() - dTime));
+		dTime = FPlatformTime::Seconds();
+
 		// Create the Triangles
 		for (FOP_TriangleIndices tri : faces)
 		{
@@ -255,6 +270,9 @@ void AOP_ProceduralPlanet::GeneratePlanet(bool bIgnoreLOD)
 			planetData->Triangles.Add(tri.V2);
 			planetData->Triangles.Add(tri.V3);
 		}
+
+		UE_LOG(LogTemp, Warning, TEXT("Stage 4, Tris created: %f , d = %f"), (FPlatformTime::Seconds() - sTime), (FPlatformTime::Seconds() - dTime));
+		dTime = FPlatformTime::Seconds();
 
 		// Calculate tangents
 		TArray<FVector> tangents;
@@ -273,12 +291,16 @@ void AOP_ProceduralPlanet::GeneratePlanet(bool bIgnoreLOD)
 			}
 			i += 3;
 		}
+
+		UE_LOG(LogTemp, Warning, TEXT("Stage 5, Tangents calculated: %f , d = %f"), (FPlatformTime::Seconds() - sTime), (FPlatformTime::Seconds() - dTime));
+		dTime = FPlatformTime::Seconds();
 		
 	}
 
 
 
 	UE_LOG(LogTemp, Warning, TEXT("MeshData: %s"), *planetData->ToString());
+	dTime = FPlatformTime::Seconds();
 
 	// Create the mesh
 	RTMComponent->ClearAllMeshSections();
@@ -292,7 +314,8 @@ void AOP_ProceduralPlanet::GeneratePlanet(bool bIgnoreLOD)
 		rtTangents,
 		false);
 
-
+	UE_LOG(LogTemp, Warning, TEXT("Stage 6, Mesh generated: %f , d = %f"), (FPlatformTime::Seconds() - sTime), (FPlatformTime::Seconds() - dTime));
+	dTime = FPlatformTime::Seconds();
 
 	// Set the material
 	if (Material)
@@ -310,8 +333,13 @@ void AOP_ProceduralPlanet::GeneratePlanet(bool bIgnoreLOD)
 	GenerateHeatMapTex(planetData);
 	GenerateSteepnessMapTex(planetData);
 
+	
+
 	cubemap = NoiseCube->GetCubeTextures();
 	Steepnessmap = NoiseCube->GetSteepnessTextures();
+
+	UE_LOG(LogTemp, Warning, TEXT("Stage 7, Textures generated: t= %f , d = "), (FPlatformTime::Seconds() - sTime), (FPlatformTime::Seconds() - dTime));
+	dTime = FPlatformTime::Seconds();
 }
 
 void AOP_ProceduralPlanet::ClearPlanet()
