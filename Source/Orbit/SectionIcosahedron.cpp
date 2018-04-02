@@ -29,33 +29,61 @@ void ASectionIcosahedron::CreateIcosahedron()
 	FVector origin = GetActorLocation();
 
 	// Create the 12 vertices of the icosahedron
-	FVector v0 = FVector(-1, t, 0);
-	FVector v1 = FVector(1, t, 0);
-	FVector v2 = FVector(-1, -t, 0);
-	FVector v3 = FVector(1, -t, 0);
+	/*FVector v0 = FVector(1, -t, 0);
+	FVector v1 = FVector(-1, -t, 0);
+	FVector v2 = FVector(1, t, 0);
+	FVector v3 = FVector(-1, t, 0);
 
-	FVector v4 = FVector(0, -1, t);
-	FVector v5 = FVector(0, 1, t);
-	FVector v6 = FVector(0, -1, -t);
-	FVector v7 = FVector(0, 1, -t);
+	FVector v4 = FVector(0, 1, -t);
+	FVector v5 = FVector(0, -1, -t);
+	FVector v6 = FVector(0, 1, t);
+	FVector v7 = FVector(0, -1, t);
 
-	FVector v8 = FVector(t, 0, -1);
-	FVector v9 = FVector(t, 0, 1);
-	FVector v10 = FVector(-t, 0, -1);
-	FVector v11 = FVector(-t, 0, 1);
+	FVector v8 = FVector(-t, 0, 1);
+	FVector v9 = FVector(-t, 0, -1);
+	FVector v10 = FVector(t, 0, 1);
+	FVector v11 = FVector(t, 0, -1);*/
 
-	FRuntimeMeshVertexSimple vs0 = FRuntimeMeshVertexSimple(-v0, v0 - origin);
-	FRuntimeMeshVertexSimple vs1 = FRuntimeMeshVertexSimple(-v1, v1 - origin);
-	FRuntimeMeshVertexSimple vs2 = FRuntimeMeshVertexSimple(-v2, v2 - origin);
-	FRuntimeMeshVertexSimple vs3 = FRuntimeMeshVertexSimple(-v3, v3 - origin);
-	FRuntimeMeshVertexSimple vs4 = FRuntimeMeshVertexSimple(-v4, v4 - origin);
-	FRuntimeMeshVertexSimple vs5 = FRuntimeMeshVertexSimple(-v5, v5 - origin);
-	FRuntimeMeshVertexSimple vs6 = FRuntimeMeshVertexSimple(-v6, v6 - origin);
-	FRuntimeMeshVertexSimple vs7 = FRuntimeMeshVertexSimple(-v7, v7 - origin);
-	FRuntimeMeshVertexSimple vs8 = FRuntimeMeshVertexSimple(-v8, v8 - origin);
-	FRuntimeMeshVertexSimple vs9 = FRuntimeMeshVertexSimple(-v9, v9 - origin);
-	FRuntimeMeshVertexSimple vs10 = FRuntimeMeshVertexSimple(-v10, v10 - origin);
-	FRuntimeMeshVertexSimple vs11 = FRuntimeMeshVertexSimple(-v11, v11 - origin);
+	FVector v0 = FVector(1, -t, 0);
+	FVector v1 = FVector(-1, -t, 0);
+	FVector v2 = FVector(1, t, 0);
+	FVector v3 = FVector(-1, t, 0);
+
+	FVector v4 = FVector(0, 1, -t);
+	FVector v5 = FVector(0, -1, -t);
+	FVector v6 = FVector(0, 1, t);
+	FVector v7 = FVector(0, -1, t);
+
+	FVector v8 = FVector(-t, 0, 1);
+	FVector v9 = FVector(-t, 0, -1);
+	FVector v10 = FVector(t, 0, 1);
+	FVector v11 = FVector(t, 0, -1);
+
+	FRuntimeMeshVertexSimple vs0 = FRuntimeMeshVertexSimple(v0, v0);
+	vs0.Color = FColor::White;
+	FRuntimeMeshVertexSimple vs1 = FRuntimeMeshVertexSimple(v1, v1);
+	vs1.Color = FColor::White;
+	FRuntimeMeshVertexSimple vs2 = FRuntimeMeshVertexSimple(v2, v2);
+	vs2.Color = FColor::White;
+	FRuntimeMeshVertexSimple vs3 = FRuntimeMeshVertexSimple(v3, v3);
+	vs3.Color = FColor::White;
+	FRuntimeMeshVertexSimple vs4 = FRuntimeMeshVertexSimple(v4, v4);
+	vs4.Color = FColor::White;
+	FRuntimeMeshVertexSimple vs5 = FRuntimeMeshVertexSimple(v5, v5);
+	vs5.Color = FColor::White;
+	FRuntimeMeshVertexSimple vs6 = FRuntimeMeshVertexSimple(v6, v6 );
+	vs6.Color = FColor::White;
+	FRuntimeMeshVertexSimple vs7 = FRuntimeMeshVertexSimple(v7, v7);
+	vs7.Color = FColor::White;
+	FRuntimeMeshVertexSimple vs8 = FRuntimeMeshVertexSimple(v8, v8);
+	vs8.Color = FColor::White;
+	FRuntimeMeshVertexSimple vs9 = FRuntimeMeshVertexSimple(v9, v9);
+	vs9.Color = FColor::White;
+	FRuntimeMeshVertexSimple vs10 = FRuntimeMeshVertexSimple(v10, v10);
+	vs10.Color = FColor::White;
+	FRuntimeMeshVertexSimple vs11 = FRuntimeMeshVertexSimple(v11, v11);
+	vs11.Color = FColor::White;
+
 
 	// Initialise the section arrays
 	TArray<TArray<int32>> sectionTris;
