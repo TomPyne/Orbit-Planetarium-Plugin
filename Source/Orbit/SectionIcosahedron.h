@@ -4,7 +4,23 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
+#include "RuntimeMeshComponent.h"
 #include "SectionIcosahedron.generated.h"
+
+UCLASS()
+class USectionData : public UObject
+{
+	GENERATED_BODY()
+
+public:
+
+	USectionData() {}
+
+	TArray<int32> Triangles;
+	TArray<FRuntimeMeshVertexSimple> Vertices;
+
+	int Index = 3;	
+};
 
 UCLASS()
 class ORBIT_API ASectionIcosahedron : public AActor
@@ -27,7 +43,18 @@ protected:
 
 	void CreateIcosahedron();
 
-	void SetupSection(TArray<struct FRuntimeMeshVertexSimple> &outVertexList, TArray<int32> &outTriList, FRuntimeMeshVertexSimple vs0, FRuntimeMeshVertexSimple vs1, FRuntimeMeshVertexSimple vs2);
+	void SetupSection(USectionData* SectionData, FRuntimeMeshVertexSimple vs0, FRuntimeMeshVertexSimple vs1, FRuntimeMeshVertexSimple vs2);
+
+	void SubdivideMeshSection(USectionData* SectionData, int recursion);
+
+	static int GetMiddlePoint(int p1, int p2, USectionData* SectionData);
+	static int AddVertex(FVector v, USectionData* SectionData);
+
+	UPROPERTY()
+	TArray<USectionData* > Sections;
+
+	TArray<TArray<int32>> SectionTris;
+	TArray<TArray<FRuntimeMeshVertexSimple>> SectionVerts;
 
 public:	
 	// Called every frame
