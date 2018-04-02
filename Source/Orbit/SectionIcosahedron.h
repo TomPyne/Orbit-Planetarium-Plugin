@@ -39,7 +39,7 @@ protected:
 	class URuntimeMeshComponent* RuntimeMeshComponent;
 
 	UPROPERTY(EditAnywhere)
-	float Radius = 10.0f;
+	int Subdivisions = 4;
 
 	void CreateIcosahedron();
 
