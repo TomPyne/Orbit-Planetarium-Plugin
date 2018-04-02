@@ -11,6 +11,7 @@
 #include "Engine/Texture2D.h"
 #include "OP_NoiseCube.h"
 #include "RuntimeMeshComponent.h"
+#include "OP_SplatMaterialData.h"
 
 FString UOP_PlanetData::ToString()
 {
@@ -276,11 +277,15 @@ void AOP_ProceduralPlanet::GeneratePlanet(bool bIgnoreLOD)
 		// Empty the vertex array and repopulate it with the polar vertices
 		FVector lastV = FVector::ZeroVector;
 		planetData->Vertices.Empty();
-		for (FOP_SphericalCoords polarV : PolarVertices3D)
+		
+		for (int i = 0; i < PolarVertices3D.Num(); i++)
 		{
-			FVector cartesianVertex = polarV.ToCartesian();
+			FVector cartesianVertex = PolarVertices3D[i].ToCartesian();
 			planetData->Vertices.Add(cartesianVertex);
-
+			/*if ((i + 1) % 3 == 0)
+			{
+				
+			}*/
 		}
 
 		UE_LOG(LogTemp, Warning, TEXT("Stage 3, Spherical to cartesian: %f , d = %f"), (FPlatformTime::Seconds() - sTime), (FPlatformTime::Seconds() - dTime));
@@ -343,7 +348,7 @@ void AOP_ProceduralPlanet::GeneratePlanet(bool bIgnoreLOD)
 
 	// Generate image from heightmap
 	GenerateHeatMapTex(planetData);
-	GenerateSteepnessMapTex(planetData);
+	//GenerateSteepnessMapTex(planetData);
 
 	
 
@@ -463,31 +468,56 @@ void AOP_ProceduralPlanet::GenerateHeatMapTex(UOP_PlanetData* planetData)
 {
 	int resolution = FMath::Sqrt(planetData->UV.Num());
 
-	TArray<FColor> colorMap;
-	colorMap.Init(FColor::Black, resolution * resolution);
+	TArray<FColor> heightColorMap;
+	TArray<FColor> steepnessColorMap;
+	heightColorMap.Init(FColor::Black, resolution * resolution);
+	steepnessColorMap.Init(FColor::Black, resolution * resolution);
+
 
 	// Generate flat array of colors from vertexColor and UV arrays
 	for (int i = 0; i < planetData->UV.Num(); i++)
 	{
+		// Height map
 		FColor col = planetData->VertexColours[i];
 		int xPos = (((planetData->UV[i].X / PI) + 1.0f) / 2.0f) * resolution;
 		int yPos = (((planetData->UV[i].Y / PI) + 1.0f) / 2.0f) * resolution;
 		int aPos = ((yPos)* resolution) + (xPos);
-		if (aPos >= 0 && aPos < colorMap.Num())
+		if (aPos >= 0 && aPos < heightColorMap.Num())
 		{
-			colorMap[((yPos)* resolution) + (xPos)] = col;
+			heightColorMap[((yPos)* resolution) + (xPos)] = col;
 		}
-
 	}
 
-	FCreateTexture2DParameters params;
+	for (int y = 0; y < resolution - 1; y++)
+	{
+		for (int x = 0; x < resolution - 1; x++)
+		{
+			float dx = heightColorMap[(y * resolution) + (x + 1)].R / 255.0f;
+			float dy = heightColorMap[((y + 1) * resolution) + x].R / 255.0f;
+
+			float steepness = fabs(dx) + fabs(dy);
+			FColor steepnessColor = steepness > 0.5f ? FColor(255, 255 - (steepness * 255), 0) : FColor(steepness * 255, 255, 0);
+			steepnessColorMap[(y * resolution + x)] = steepnessColor;
+		}
+	}
+
+	FCreateTexture2DParameters hParams;
 	CombinedNoiseTex = FImageUtils::CreateTexture2D(resolution,
 		resolution,
-		colorMap,
+		heightColorMap,
 		this,
 		TEXT("CombinedNoise"),
 		EObjectFlags::RF_Transient,
-		params);
+		hParams);
+
+	FCreateTexture2DParameters sParams;
+	CombinedSteepnessTex = FImageUtils::CreateTexture2D(resolution,
+		resolution,
+		steepnessColorMap,
+		this,
+		TEXT("CombinedSteepnessNoise"),
+		EObjectFlags::RF_Transient,
+		sParams);
 }
 
 void AOP_ProceduralPlanet::GenerateSteepnessMapTex(UOP_PlanetData * planetData)

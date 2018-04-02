@@ -225,6 +225,9 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Cube")
 	TArray<UTexture2D*> Decals;
 
+	// MATERIAL ///////////////////////////////////////////////////////////////////
+	TArray<class UOP_SplatMaterialData* > SplatMaterials;
+
 	// LOD ///////////////////////////////////////////////////////////////////
 
 	
@@ -261,6 +264,8 @@ public:
 
 	// Clear the mesh
 	void ClearPlanet();
+
+
 
 protected:
 
