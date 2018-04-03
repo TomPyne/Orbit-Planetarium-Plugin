@@ -109,6 +109,11 @@ public:
 	TArray<int32> Triangles;
 	TArray<FRuntimeMeshVertexSimple> Vertices;
 
+	// The normal of this section to tell when it is visible to the player or occluded
+	// on a sphere we know if the angle between the camera normal and face normal is less than
+	// 90 it is occluded
+	FVector SectionNormal;
+
 	int Index = 3;
 };
 
@@ -122,6 +127,11 @@ class ORBITPLANETARIUM_API AOP_ProceduralPlanet : public AActor
 public:	
 	// Sets default values for this actor's properties
 	AOP_ProceduralPlanet();
+
+	FTimerHandle TimerHandle_UpdateMesh;
+	
+	UPROPERTY(EditAnywhere)
+	float MeshUpdateRate = 2.0f;
 
 	// LOD ////////////////////////////////////////////////////////////////////////
 

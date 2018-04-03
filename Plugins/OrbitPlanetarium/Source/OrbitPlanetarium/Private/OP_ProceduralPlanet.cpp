@@ -58,6 +58,7 @@ void AOP_ProceduralPlanet::BeginPlay()
 	// Check the LOD, this also generates the planet if the LOD has changed
 	//CheckLODRange(true);
 
+	GetWorld()->GetTimerManager().SetTimer(TimerHandle_UpdateMesh, this, &AOP_ProceduralPlanet::testGenerateSectionIcosahedron, MeshUpdateRate, true);
 }
 
 void AOP_ProceduralPlanet::GenerateNoiseCubes()
@@ -153,6 +154,9 @@ void AOP_ProceduralPlanet::SetupSection(UOP_SectionData * sectionData, FRuntimeM
 	sectionData->Triangles.Add(0);
 	sectionData->Triangles.Add(1);
 	sectionData->Triangles.Add(2);
+
+	// Calc section normal
+	sectionData->SectionNormal = ((vs0.Position + vs1.Position + vs2.Position) / 3).GetSafeNormal();
 }
 
 int AOP_ProceduralPlanet::GetMiddlePointOnSection(int p1, int p2, UOP_SectionData * sectionData)
@@ -240,16 +244,25 @@ FVector AOP_ProceduralPlanet::GetVertexPositionFromNoise(FVector v, FVector n)
 
 void AOP_ProceduralPlanet::testGenerateSectionIcosahedron()
 {
-	GenerateNoiseCubes();
+	if (PlayerPawn == nullptr) { return; }
+
+	if (NoiseCube == nullptr || RoughNoiseCube == nullptr)
+	{
+		GenerateNoiseCubes();
+	}
+	
 
 	FVector pos = GetActorLocation();
 
 	TArray<UOP_SectionData* > icosahedron = GenerateIcosahedronSectionData(this);
 	for (UOP_SectionData* section : icosahedron)
 	{
+		// Get camera position normal
+		FVector camPosNrm = (GetActorLocation() - PlayerPawn->GetActorLocation()).GetSafeNormal();
+		float angle = FMath::Acos(FVector::DotProduct(section->SectionNormal, camPosNrm));
+		uint8 subD = angle * (180.0f / PI) > 90.0f ? 6 : 1;		
 		// SubD
-		SubdivideMeshSection(section, FMath::RandRange(2, 7));
-
+		SubdivideMeshSection(section, subD);
 		TArray<FRuntimeMeshVertexSimple> test;
 		for (FRuntimeMeshVertexSimple v : section->Vertices)
 		{
@@ -266,6 +279,7 @@ void AOP_ProceduralPlanet::testGenerateSectionIcosahedron()
 
 	if (RTMComponent)
 	{
+		RTMComponent->ClearAllMeshSections();
 		for (int i = 0; i < 20; i++)
 		{
 			RTMComponent->CreateMeshSection(i, icosahedron[i]->Vertices, icosahedron[i]->Triangles);
@@ -278,7 +292,8 @@ void AOP_ProceduralPlanet::testGenerateSectionIcosahedron()
 void AOP_ProceduralPlanet::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
-	CheckLODRange(false);
+
+	//CheckLODRange(false);
 }
 
 void AOP_ProceduralPlanet::GeneratePlanet(bool bIgnoreLOD)
