@@ -10,7 +10,6 @@
 #include "ImageUtils.h"
 #include "Engine/Texture2D.h"
 #include "OP_NoiseCube.h"
-#include "RuntimeMeshComponent.h"
 #include "OP_SplatMaterialData.h"
 
 FString UOP_PlanetData::ToString()
@@ -73,6 +72,142 @@ void AOP_ProceduralPlanet::GenerateNoiseCubes()
 
 	RoughNoiseCube = NewObject<UOP_NoiseCube>(this);
 	RoughNoiseCube->Init(256, RoughNoiseType, Seed, RoughFrequency, RoughFractalGain, RoughInterpolation, RoughFractalType, RoughOctaves, RoughLacunarity);
+}
+
+TArray<UOP_SectionData*> AOP_ProceduralPlanet::GenerateIcosahedronSectionData(UObject* outer)
+{
+	if (outer == nullptr)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Bad Outer provided AOP_ProceduralPlanet::GenerateIcosahedronSectionData"));
+	}
+	float t = (1.0f + FMath::Sqrt(5.0f)) / 2.0f;
+
+	// Create the 12 vertices of the icosahedron
+	FVector v0 = FVector(1, -t, 0);
+	FVector v1 = FVector(-1, -t, 0);
+	FVector v2 = FVector(1, t, 0);
+	FVector v3 = FVector(-1, t, 0);
+	FVector v4 = FVector(0, 1, -t);
+	FVector v5 = FVector(0, -1, -t);
+	FVector v6 = FVector(0, 1, t);
+	FVector v7 = FVector(0, -1, t);
+	FVector v8 = FVector(-t, 0, 1);
+	FVector v9 = FVector(-t, 0, -1);
+	FVector v10 = FVector(t, 0, 1);
+	FVector v11 = FVector(t, 0, -1);
+
+	// Convert the, to the packed version with normal data
+	FRuntimeMeshVertexSimple vs0 = FRuntimeMeshVertexSimple(v0, v0);
+	FRuntimeMeshVertexSimple vs1 = FRuntimeMeshVertexSimple(v1, v1);
+	FRuntimeMeshVertexSimple vs2 = FRuntimeMeshVertexSimple(v2, v2);
+	FRuntimeMeshVertexSimple vs3 = FRuntimeMeshVertexSimple(v3, v3);
+	FRuntimeMeshVertexSimple vs4 = FRuntimeMeshVertexSimple(v4, v4);
+	FRuntimeMeshVertexSimple vs5 = FRuntimeMeshVertexSimple(v5, v5);
+	FRuntimeMeshVertexSimple vs6 = FRuntimeMeshVertexSimple(v6, v6);
+	FRuntimeMeshVertexSimple vs7 = FRuntimeMeshVertexSimple(v7, v7);
+	FRuntimeMeshVertexSimple vs8 = FRuntimeMeshVertexSimple(v8, v8);
+	FRuntimeMeshVertexSimple vs9 = FRuntimeMeshVertexSimple(v9, v9);
+	FRuntimeMeshVertexSimple vs10 = FRuntimeMeshVertexSimple(v10, v10);
+	FRuntimeMeshVertexSimple vs11 = FRuntimeMeshVertexSimple(v11, v11);
+
+	// Create and initialise the section array
+	TArray<UOP_SectionData* > icoSections;
+	for (int i = 0; i < 20; i++) { icoSections.Add(NewObject<UOP_SectionData>(outer)); }
+
+	// Create the 20 faces of the icosahedron as seperate mesh sections
+	SetupSection(icoSections[0], vs0, vs11, vs5);
+	SetupSection(icoSections[1], vs0, vs5, vs1);
+	SetupSection(icoSections[2], vs0, vs1, vs7);
+	SetupSection(icoSections[3], vs0, vs7, vs10);
+	SetupSection(icoSections[4], vs0, vs10, vs11);
+	SetupSection(icoSections[5], vs1, vs5, vs9);
+	SetupSection(icoSections[6], vs5, vs11, vs4);
+	SetupSection(icoSections[7], vs11, vs10, vs2);
+	SetupSection(icoSections[8], vs10, vs7, vs6);
+	SetupSection(icoSections[9], vs7, vs1, vs8);
+	SetupSection(icoSections[10], vs3, vs9, vs4);
+	SetupSection(icoSections[11], vs3, vs4, vs2);
+	SetupSection(icoSections[12], vs3, vs2, vs6);
+	SetupSection(icoSections[13], vs3, vs6, vs8);
+	SetupSection(icoSections[14], vs3, vs8, vs9);
+	SetupSection(icoSections[15], vs4, vs9, vs5);
+	SetupSection(icoSections[16], vs2, vs4, vs11);
+	SetupSection(icoSections[17], vs6, vs2, vs10);
+	SetupSection(icoSections[18], vs8, vs6, vs7);
+	SetupSection(icoSections[19], vs9, vs8, vs1);
+
+	// Return the icosahedron
+	return icoSections;
+}
+
+void AOP_ProceduralPlanet::SetupSection(UOP_SectionData * sectionData, FRuntimeMeshVertexSimple vs0, FRuntimeMeshVertexSimple vs1, FRuntimeMeshVertexSimple vs2)
+{
+	sectionData->Vertices.Add(vs0);
+	sectionData->Vertices.Add(vs1);
+	sectionData->Vertices.Add(vs2);
+	sectionData->Triangles.Add(0);
+	sectionData->Triangles.Add(1);
+	sectionData->Triangles.Add(2);
+}
+
+int AOP_ProceduralPlanet::GetMiddlePointOnSection(int p1, int p2, UOP_SectionData * sectionData)
+{
+	if (sectionData == nullptr) { return 0; }
+
+	// Calculate it
+	FVector point1 = sectionData->Vertices[p1].Position;
+	FVector point2 = sectionData->Vertices[p2].Position;
+	FVector middle = FVector(
+		(point1.X + point2.X) / 2.0f,
+		(point1.Y + point2.Y) / 2.0f,
+		(point1.Z + point2.Z) / 2.0f);
+
+	int i = AddVertexToSection(middle, sectionData);
+	return i;
+}
+
+int AOP_ProceduralPlanet::AddVertexToSection(FVector v, UOP_SectionData * sectionData)
+{
+	if (sectionData == nullptr) { return 0; }
+
+	double Length = v.Size();
+	sectionData->Vertices.Add(FRuntimeMeshVertexSimple(FVector(v.X, v.Y, v.Z), FVector(v.X, v.Y, v.Z)));
+	return sectionData->Index++;
+}
+
+void AOP_ProceduralPlanet::SubdivideMeshSection(UOP_SectionData * sectionData, int recursion)
+{
+	if (sectionData == nullptr) { return; }
+
+	for (int i = 0; i < recursion; i++)
+	{
+		int tris = sectionData->Triangles.Num();
+		TArray<int32> tris2;
+		for (int j = 0; j < tris; j = j + 3)
+		{
+			int v1 = sectionData->Triangles[j];
+			int v2 = sectionData->Triangles[j + 1];
+			int v3 = sectionData->Triangles[j + 2];
+			int a = GetMiddlePointOnSection(v1, v2, sectionData);
+			int b = GetMiddlePointOnSection(v2, v3, sectionData);
+			int c = GetMiddlePointOnSection(v3, v1, sectionData);
+
+			tris2.Add(v1);
+			tris2.Add(a);
+			tris2.Add(c);
+			tris2.Add(v2);
+			tris2.Add(b);
+			tris2.Add(a);
+			tris2.Add(v3);
+			tris2.Add(c);
+			tris2.Add(b);
+			tris2.Add(a);
+			tris2.Add(b);
+			tris2.Add(c);
+		}
+
+		sectionData->Triangles = tris2;
+	}
 }
 
 // Called every frame

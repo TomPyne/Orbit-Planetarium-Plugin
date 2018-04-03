@@ -6,6 +6,7 @@
 #include "GameFramework/Actor.h"
 #include "ProceduralMeshComponent.h"
 #include "UnrealFastNoisePlugin/Public/FastNoise/FastNoise.h"
+#include "RuntimeMeshComponent.h"
 #include "OP_ProceduralPlanet.generated.h"
 
 USTRUCT()
@@ -94,6 +95,21 @@ public:
 	FORCEINLINE bool IsPopulated() { return Vertices.Num() > 0 && Triangles.Num() > 0; }
 
 	FString ToString();
+};
+
+UCLASS()
+class UOP_SectionData : public UObject
+{
+	GENERATED_BODY()
+
+public:
+
+	UOP_SectionData() {}
+
+	TArray<int32> Triangles;
+	TArray<FRuntimeMeshVertexSimple> Vertices;
+
+	int Index = 3;
 };
 
 class UTexture2D;
@@ -227,6 +243,17 @@ public:
 
 	// MATERIAL ///////////////////////////////////////////////////////////////////
 	TArray<class UOP_SplatMaterialData* > SplatMaterials;
+
+	// SECTIONDATA ///////////////////////////////////////////////////////////////////
+
+	static TArray<UOP_SectionData* > GenerateIcosahedronSectionData(UObject* outer);
+
+	static void SetupSection(UOP_SectionData* sectionData, FRuntimeMeshVertexSimple vs0, FRuntimeMeshVertexSimple vs1, FRuntimeMeshVertexSimple vs2);
+
+	static int GetMiddlePointOnSection(int p1, int p2, UOP_SectionData* sectionData);
+	static int AddVertexToSection(FVector v, UOP_SectionData* sectionData);
+
+	static void SubdivideMeshSection(UOP_SectionData* sectionData, int recursion);
 
 	// LOD ///////////////////////////////////////////////////////////////////
 
