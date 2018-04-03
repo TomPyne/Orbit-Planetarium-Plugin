@@ -41,14 +41,17 @@ protected:
 	UPROPERTY(EditAnywhere)
 	int Subdivisions = 4;
 
+	UPROPERTY(EditAnywhere)
+	float Scale = 15.0f;
+
 	void CreateIcosahedron();
 
 	void SetupSection(USectionData* SectionData, FRuntimeMeshVertexSimple vs0, FRuntimeMeshVertexSimple vs1, FRuntimeMeshVertexSimple vs2);
 
 	void SubdivideMeshSection(USectionData* SectionData, int recursion);
 
-	static int GetMiddlePoint(int p1, int p2, USectionData* SectionData);
-	static int AddVertex(FVector v, USectionData* SectionData);
+	int GetMiddlePoint(int p1, int p2, USectionData* SectionData);
+	int AddVertex(FVector v, USectionData* SectionData);
 
 	UPROPERTY()
 	TArray<USectionData* > Sections;

@@ -95,10 +95,13 @@ void ASectionIcosahedron::CreateIcosahedron()
 	float sTime = FPlatformTime::Seconds();
 
 	// Refine sections
-	for (int i = 0; i < Sections.Num(); i++)
+	for (int i = 0; i < Sections.Num() - 1; i++)
 	{
-		SubdivideMeshSection(Sections[i], Subdivisions);
+		
+		SubdivideMeshSection(Sections[i], FMath::RandRange(1, Subdivisions));
 	}
+
+	SubdivideMeshSection(Sections[19], 10);
 	
 	UE_LOG(LogTemp, Warning, TEXT("Time to subd mesh: %f"), (FPlatformTime::Seconds() - sTime));
 	sTime = FPlatformTime::Seconds();
