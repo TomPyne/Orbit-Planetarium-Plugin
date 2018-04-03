@@ -551,3 +551,19 @@ void AOP_ProceduralPlanet::GenerateSteepnessMapTex(UOP_PlanetData * planetData)
 		EObjectFlags::RF_Transient,
 		params);
 }
+
+int AOP_ProceduralPlanet::GetCurrentLODLevel()
+{
+	if (PlayerPawn == nullptr) { return 0; }
+
+	float dist = (GetActorLocation() - PlayerPawn->GetActorLocation()).Size();
+	for (int i = 0; i < LODDistances.Num(); i++)
+	{
+		if (dist < LODDistances[i])
+		{
+			return i;
+		}
+	}
+	// if outside all bounds return array size indicating max
+	return LODDistances.Num();
+}

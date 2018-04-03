@@ -230,6 +230,10 @@ public:
 
 	// LOD ///////////////////////////////////////////////////////////////////
 
+	// Each array value represents the upper limit of each LOD range, if 0 is 100
+	// then while the distance is < 100 the LOD is set to 0
+	UPROPERTY(EditAnywhere, Category = LOD)
+	TArray<float> LODDistances;
 	
 	float LOD1Distance = 300000.0f;
 	float LOD2Distance = 267210.0f; //89070.0f;
@@ -303,6 +307,8 @@ protected:
 	void GenerateHeatMapTex(UOP_PlanetData* planetData);
 
 	void GenerateSteepnessMapTex(UOP_PlanetData* planetData);
+
+	int GetCurrentLODLevel();
 
 private:
 
