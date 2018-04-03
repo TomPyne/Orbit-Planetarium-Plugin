@@ -53,12 +53,10 @@ void AOP_ProceduralPlanet::BeginPlay()
 	// Get references
 	PlayerPawn = UGameplayStatics::GetPlayerPawn(GetWorld(), 0);
 
-	testGenerateSectionIcosahedron();
-
 	// Check the LOD, this also generates the planet if the LOD has changed
 	//CheckLODRange(true);
 
-	GetWorld()->GetTimerManager().SetTimer(TimerHandle_UpdateMesh, this, &AOP_ProceduralPlanet::testGenerateSectionIcosahedron, MeshUpdateRate, true);
+	GetWorld()->GetTimerManager().SetTimer(TimerHandle_UpdateMesh, this, &AOP_ProceduralPlanet::UpdatePlanetMeshSections, MeshUpdateRate, true);
 }
 
 void AOP_ProceduralPlanet::GenerateNoiseCubes()
@@ -219,6 +217,24 @@ void AOP_ProceduralPlanet::SubdivideMeshSection(UOP_SectionData * sectionData, i
 	}
 }
 
+void AOP_ProceduralPlanet::ApplyNoiseToMeshSection(UOP_SectionData * sectionData)
+{
+	if (sectionData == nullptr) { return; }
+
+	FVector pos = GetActorLocation();
+
+	TArray<FRuntimeMeshVertexSimple> v2;
+	for (FRuntimeMeshVertexSimple v : sectionData->Vertices)
+	{
+		FRuntimeMeshVertexSimple temp = v;
+		FVector normal = (pos - v.Position).GetSafeNormal();
+		temp.Position = GetVertexPositionFromNoise(v.Position, normal);
+		v2.Add(temp);
+	}
+
+	sectionData->Vertices = v2;
+}
+
 FVector AOP_ProceduralPlanet::GetVertexPositionFromNoise(FVector v, FVector n)
 {
 	if (NoiseCube == nullptr || RoughNoiseCube == nullptr)
@@ -242,50 +258,136 @@ FVector AOP_ProceduralPlanet::GetVertexPositionFromNoise(FVector v, FVector n)
 	return sCoords.ToCartesian();
 }
 
-void AOP_ProceduralPlanet::testGenerateSectionIcosahedron()
+
+void AOP_ProceduralPlanet::UpdatePlanetMeshSections()
 {
-	if (PlayerPawn == nullptr) { return; }
+	// Check RTMC exists
+	// if not return
+	if (RTMComponent == nullptr)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("No RTMComponent AOP_ProceduralPlanet::UpdatePlanetMeshSections"));
+		return;
+	}
+
+	if (PlayerPawn == nullptr)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("No PlayerPawn AOP_ProceduralPlanet::UpdatePlanetMeshSections"));
+		return;
+	}
 
 	if (NoiseCube == nullptr || RoughNoiseCube == nullptr)
 	{
 		GenerateNoiseCubes();
 	}
+
+	// Check mesh has already been created
+	bool updateMesh = RTMComponent->GetNumSections() == 20;
+
+	// Check base icosahedron exists
+	// If not, create it
+	if (CachedIcosahedron.Num() != 20)
+	{
+		CachedIcosahedron = GenerateIcosahedronSectionData(this);
+	}
+
+	// The sections that will be used to generate the mesh
+	TArray<UOP_SectionData* > sections;
+
+	// Indicating which sections actually need updating here could potentially save a lot of
+	// processing time
+	TArray<uint8> sectionsToUpdate;
+
+	// Try and get a cached version of each section, and create the section if the cache is missing
+	for (int i = 0; i < 20; i++)
+	{
+		/* Use base icosahedron to determine section normal.
+		   Get the LOD level of the section */
+		uint8 currLOD = GetCurrentLODLevel(PlayerPawn->GetActorLocation(), GetActorLocation(), CachedIcosahedron[i]->SectionNormal);
+
+		// If the LOD has changed we doneed to update this mesh section
+		if (currLOD != PreviousLODs[i])
+		{
+			PreviousLODs[i] = currLOD;
+			sectionsToUpdate.Add(i);
+			// Try and get the cached Lod
+			UOP_SectionData* sectionData = TryGetCachedSectionData(currLOD, i);
+
+			if (sectionData == nullptr)
+			{
+				// Create a new section and copy the data from the cached icosahedron
+				sectionData = NewObject<UOP_SectionData>(this);
+				sectionData->Copy(CachedIcosahedron[i]);
+
+				// Subd that section LOD number of times
+				SubdivideMeshSection(sectionData, currLOD);
+
+				// Apply the noise
+				ApplyNoiseToMeshSection(sectionData);
+
+				// cache final data
+				CacheSectionData(sectionData, currLOD, i);
+			}
+
+			sections.Add(sectionData);
+		}
+		
+	}
+
+	// If the mesh needs creating
+	if (!updateMesh)
+	{
+		for (int i = 0; i < CachedIcosahedron.Num(); i++)
+		{
+			RTMComponent->CreateMeshSection(i, CachedIcosahedron[i]->Vertices, CachedIcosahedron[i]->Triangles);
+		}
+	}
+
+		for (int i = 0; i < sectionsToUpdate.Num(); i++)
+		{ 
+			int index = sectionsToUpdate[i];
+			RTMComponent->UpdateMeshSection(index, sections[i]->Vertices, sections[i]->Triangles);
+		}
+}
+
+UOP_SectionData* AOP_ProceduralPlanet::TryGetCachedSectionData(uint8 LODLevel, int section)
+{
+	UOP_SectionDataContainer **cachedDataPtr = CachedSectionLODLevels.Find(LODLevel);
+	UOP_SectionDataContainer* cachedData = nullptr;
+	if (cachedDataPtr != nullptr)
+	{
+		cachedData = *cachedDataPtr;
+		if (cachedData->Data.Num() == 20 && section >= 0 && section < 20)
+		{
+			return cachedData->Data[section];
+		}
+		else
+		{
+			//UE_LOG(LogTemp, Warning, TEXT("Cached data array size: %d , section number: %d AOP_ProceduralPlanet::TryGetCachedSectionData"), cachedData->Data.Num(), section);
+			return nullptr;
+		}
+	}
 	
+	return nullptr;
+}
 
-	FVector pos = GetActorLocation();
-
-	TArray<UOP_SectionData* > icosahedron = GenerateIcosahedronSectionData(this);
-	for (UOP_SectionData* section : icosahedron)
+void AOP_ProceduralPlanet::CacheSectionData(UOP_SectionData * sectionData, uint8 LODLevel, int section)
+{
+	UOP_SectionDataContainer **cachedDataPtr = CachedSectionLODLevels.Find(LODLevel);
 	{
-		// Get camera position normal
-		FVector camPosNrm = (GetActorLocation() - PlayerPawn->GetActorLocation()).GetSafeNormal();
-		float angle = FMath::Acos(FVector::DotProduct(section->SectionNormal, camPosNrm));
-		uint8 subD = angle * (180.0f / PI) > 90.0f ? 6 : 1;		
-		// SubD
-		SubdivideMeshSection(section, subD);
-		TArray<FRuntimeMeshVertexSimple> test;
-		for (FRuntimeMeshVertexSimple v : section->Vertices)
+		if (cachedDataPtr == nullptr)
 		{
-			FRuntimeMeshVertexSimple tt = v;
-			FVector normal = (pos - v.Position).GetSafeNormal();
-			tt.Position = GetVertexPositionFromNoise(v.Position, normal);
-			test.Add(tt);
-		}
+			UOP_SectionDataContainer* sdc = NewObject<UOP_SectionDataContainer>(this);
+			for (int i = 0; i < 20; i++)
+			{
+				sdc->Data.Add(NewObject<UOP_SectionData>(this));
+			}
 
-		section->Vertices = test;
-	}
-
-	// Create the mesh
-
-	if (RTMComponent)
-	{
-		RTMComponent->ClearAllMeshSections();
-		for (int i = 0; i < 20; i++)
-		{
-			RTMComponent->CreateMeshSection(i, icosahedron[i]->Vertices, icosahedron[i]->Triangles);
+			sdc->Data[section] = sectionData;
 		}
 	}
-
+	
+	//sdc->Data = sectionData;
+	//CachedSectionLODLevels.Add()
 }
 
 // Called every frame
@@ -766,11 +868,20 @@ void AOP_ProceduralPlanet::GenerateSteepnessMapTex(UOP_PlanetData * planetData)
 		params);
 }
 
-int AOP_ProceduralPlanet::GetCurrentLODLevel(FVector target, FVector LODobject)
+int AOP_ProceduralPlanet::GetCurrentLODLevel(FVector target, FVector LODobject, FVector sectionNormal)
 {
 	if (PlayerPawn == nullptr) { return 0; }
 
+	// Get camera position normal
+	FVector camPosNrm = (GetActorLocation() - PlayerPawn->GetActorLocation()).GetSafeNormal();
+	float angle = FMath::Acos(FVector::DotProduct(sectionNormal, -camPosNrm));
+
+	// Check if the section is occluded
+	if (angle * (180.0f / PI) > 90.0f) { return 1; }
+
+	// if not then calculate LOD from distance
 	float dist = (LODobject - target).Size();
+
 	for (int i = 0; i < LODDistances.Num(); i++)
 	{
 		if (dist < LODDistances[i])
@@ -778,6 +889,6 @@ int AOP_ProceduralPlanet::GetCurrentLODLevel(FVector target, FVector LODobject)
 			return i;
 		}
 	}
-	// if outside all bounds return array size indicating max
-	return LODDistances.Num();
+	// if outside all bounds return 0 indicating min
+	return 0;
 }

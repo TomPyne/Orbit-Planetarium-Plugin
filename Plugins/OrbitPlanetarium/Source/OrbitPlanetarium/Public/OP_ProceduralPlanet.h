@@ -115,6 +115,29 @@ public:
 	FVector SectionNormal;
 
 	int Index = 3;
+
+	FORCEINLINE void Copy(UOP_SectionData* other)
+	{
+		if (other != nullptr)
+		{
+			Triangles = other->Triangles;
+			Vertices = other->Vertices;
+			SectionNormal = other->SectionNormal;
+			Index = other->Index;
+		}
+	}
+};
+
+UCLASS()
+class UOP_SectionDataContainer : public UObject
+{
+	GENERATED_BODY()
+
+public:
+
+	TArray<UOP_SectionData*> Data;
+
+	UOP_SectionDataContainer() {}
 };
 
 class UTexture2D;
@@ -256,6 +279,13 @@ public:
 
 	// SECTIONDATA ///////////////////////////////////////////////////////////////////
 
+	// Cache a version of the icosahedron for quickly accessing basic section data
+	UPROPERTY()
+		TArray<UOP_SectionData* > CachedIcosahedron;
+
+	UPROPERTY()
+	TMap<uint8, UOP_SectionDataContainer* > CachedSectionLODLevels;
+
 	static TArray<UOP_SectionData* > GenerateIcosahedronSectionData(UObject* outer);
 
 	static void SetupSection(UOP_SectionData* sectionData, FRuntimeMeshVertexSimple vs0, FRuntimeMeshVertexSimple vs1, FRuntimeMeshVertexSimple vs2);
@@ -265,9 +295,20 @@ public:
 
 	static void SubdivideMeshSection(UOP_SectionData* sectionData, int recursion);
 
+	void ApplyNoiseToMeshSection(UOP_SectionData* sectionData);
+
 	FVector GetVertexPositionFromNoise(FVector v, FVector n); // ???
 
-	void testGenerateSectionIcosahedron();
+	void UpdatePlanetMeshSections();
+
+	uint8 PreviousLODs[20];
+
+	// Sets outSectionData to the cached value if there is one, if not sets it to nullptr and
+	// returns false
+	UOP_SectionData* TryGetCachedSectionData(uint8 LODLevel, int section);
+
+	// Caches the section data
+	void CacheSectionData(UOP_SectionData* sectionData, uint8 LODLevel, int section);
 
 	// LOD ///////////////////////////////////////////////////////////////////
 
@@ -327,7 +368,7 @@ protected:
 	class UProceduralMeshComponent* ProcMeshComponent;
 
 	// THe runtime mesh component;
-	UPROPERTY()
+	UPROPERTY(EditAnywhere)
 	class URuntimeMeshComponent* RTMComponent;
 
 	// Called when the game starts or when spawned
@@ -349,7 +390,7 @@ protected:
 
 	void GenerateSteepnessMapTex(UOP_PlanetData* planetData);
 
-	int GetCurrentLODLevel(FVector target, FVector LODobject);
+	int GetCurrentLODLevel(FVector target, FVector LODobject, FVector sectionNormal);
 
 private:
 
