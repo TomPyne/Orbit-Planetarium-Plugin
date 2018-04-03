@@ -10,7 +10,10 @@
 #include "ImageUtils.h"
 #include "Engine/Texture2D.h"
 #include "OP_NoiseCube.h"
+#include "OP_HeightmapDecal.h"
 #include "OP_SplatMaterialData.h"
+#include "Runtime/CoreUObject/Public/UObject/NoExportTypes.h"
+#include "PackedNormal.h"
 
 FString UOP_PlanetData::ToString()
 {
@@ -50,8 +53,10 @@ void AOP_ProceduralPlanet::BeginPlay()
 	// Get references
 	PlayerPawn = UGameplayStatics::GetPlayerPawn(GetWorld(), 0);
 
+	testGenerateSectionIcosahedron();
+
 	// Check the LOD, this also generates the planet if the LOD has changed
-	CheckLODRange(true);
+	//CheckLODRange(true);
 
 }
 
@@ -208,6 +213,65 @@ void AOP_ProceduralPlanet::SubdivideMeshSection(UOP_SectionData * sectionData, i
 
 		sectionData->Triangles = tris2;
 	}
+}
+
+FVector AOP_ProceduralPlanet::GetVertexPositionFromNoise(FVector v, FVector n)
+{
+	if (NoiseCube == nullptr || RoughNoiseCube == nullptr)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("No NoiseCube or RoughNoiseCube found AOP_ProceduralPlanet::GetVertexPositionFromNoise"));
+		return v;
+	}
+
+	// Get height from noise cubes
+	float height = NoiseCube->SampleNoiseCube(n);
+	height += RoughnessInfluence * RoughNoiseCube->SampleNoiseCube(n);
+
+	// Boosts the output
+	height *= Boost;
+
+	// Convert to spherical coords
+	FOP_SphericalCoords sCoords = FOP_SphericalCoords(v);
+	sCoords.Radius += Radius + (height * Scale);
+
+	// convert back to cartesian and return
+	return sCoords.ToCartesian();
+}
+
+void AOP_ProceduralPlanet::testGenerateSectionIcosahedron()
+{
+	GenerateNoiseCubes();
+
+	FVector pos = GetActorLocation();
+
+	TArray<UOP_SectionData* > icosahedron = GenerateIcosahedronSectionData(this);
+	for (UOP_SectionData* section : icosahedron)
+	{
+		// SubD
+		SubdivideMeshSection(section, FMath::RandRange(2, 7));
+
+		TArray<FRuntimeMeshVertexSimple> test;
+		for (FRuntimeMeshVertexSimple v : section->Vertices)
+		{
+			FRuntimeMeshVertexSimple tt = v;
+			FVector normal = (pos - v.Position).GetSafeNormal();
+			tt.Position = GetVertexPositionFromNoise(v.Position, normal);
+			test.Add(tt);
+		}
+
+		section->Vertices = test;
+	}
+
+	// Create the mesh
+
+	if (RTMComponent)
+	{
+		for (int i = 0; i < 20; i++)
+		{
+			RTMComponent->CreateMeshSection(i, icosahedron[i]->Vertices, icosahedron[i]->Triangles);
+		}
+	}
+
 }
 
 // Called every frame
@@ -687,11 +751,11 @@ void AOP_ProceduralPlanet::GenerateSteepnessMapTex(UOP_PlanetData * planetData)
 		params);
 }
 
-int AOP_ProceduralPlanet::GetCurrentLODLevel()
+int AOP_ProceduralPlanet::GetCurrentLODLevel(FVector target, FVector LODobject)
 {
 	if (PlayerPawn == nullptr) { return 0; }
 
-	float dist = (GetActorLocation() - PlayerPawn->GetActorLocation()).Size();
+	float dist = (LODobject - target).Size();
 	for (int i = 0; i < LODDistances.Num(); i++)
 	{
 		if (dist < LODDistances[i])

@@ -255,6 +255,10 @@ public:
 
 	static void SubdivideMeshSection(UOP_SectionData* sectionData, int recursion);
 
+	FVector GetVertexPositionFromNoise(FVector v, FVector n); // ???
+
+	void testGenerateSectionIcosahedron();
+
 	// LOD ///////////////////////////////////////////////////////////////////
 
 	// Each array value represents the upper limit of each LOD range, if 0 is 100
@@ -335,7 +339,7 @@ protected:
 
 	void GenerateSteepnessMapTex(UOP_PlanetData* planetData);
 
-	int GetCurrentLODLevel();
+	int GetCurrentLODLevel(FVector target, FVector LODobject);
 
 private:
 

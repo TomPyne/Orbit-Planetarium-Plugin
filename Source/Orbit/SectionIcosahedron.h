@@ -14,7 +14,8 @@ class USectionData : public UObject
 
 public:
 
-	USectionData() {}
+	USectionData() {
+	}
 
 	TArray<int32> Triangles;
 	TArray<FRuntimeMeshVertexSimple> Vertices;
