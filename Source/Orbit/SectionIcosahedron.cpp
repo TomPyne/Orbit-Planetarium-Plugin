@@ -106,15 +106,21 @@ void ASectionIcosahedron::CreateIcosahedron()
 	UE_LOG(LogTemp, Warning, TEXT("Time to subd mesh: %f"), (FPlatformTime::Seconds() - sTime));
 	sTime = FPlatformTime::Seconds();
 
+	int32 verts = 0;
+	int32 tris = 0;
+
 	if (RuntimeMeshComponent)
 	{
 		for (int i = 0; i < 20; i++)
 		{
+			verts += Sections[i]->Vertices.Num();
+			tris += Sections[i]->Triangles.Num();
 			RuntimeMeshComponent->CreateMeshSection(i, Sections[i]->Vertices, Sections[i]->Triangles);
 		}
 	}
 
 	UE_LOG(LogTemp, Warning, TEXT("Time to generate mesh: %f"), (FPlatformTime::Seconds() - sTime));
+	UE_LOG(LogTemp, Warning, TEXT("Tris: %d Verts: %d"), tris, verts);
 }
 
 void ASectionIcosahedron::SetupSection(USectionData* SectionData, FRuntimeMeshVertexSimple vs0, FRuntimeMeshVertexSimple vs1, FRuntimeMeshVertexSimple vs2)
@@ -154,7 +160,6 @@ int ASectionIcosahedron::AddVertex(FVector v, USectionData* SectionData)
 {
 	if (SectionData == nullptr) { return 0; }
 
-	double Length = v.Size();
 	SectionData->Vertices.Add(FRuntimeMeshVertexSimple( FVector(v.X, v.Y, v.Z), FVector(v.X, v.Y, v.Z)));
 	return SectionData->Index++;
 }
@@ -194,7 +199,6 @@ void ASectionIcosahedron::SubdivideMeshSection(USectionData* SectionData, int re
 		}
 
 		SectionData->Triangles = tris2;
-
 	}
 }
 
