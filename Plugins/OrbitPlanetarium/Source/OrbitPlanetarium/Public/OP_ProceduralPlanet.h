@@ -291,7 +291,7 @@ public:
 
 	static TArray<UOP_SectionData* > GenerateIcosahedronSectionData(UObject* outer);
 
-	static void SetupSection(UOP_SectionData* sectionData, FRuntimeMeshVertexSimple vs0, FRuntimeMeshVertexSimple vs1, FRuntimeMeshVertexSimple vs2);
+	static UOP_SectionData* SetupSection(FRuntimeMeshVertexSimple vs0, FRuntimeMeshVertexSimple vs1, FRuntimeMeshVertexSimple vs2, UObject* outer);
 
 	static int GetMiddlePointOnSection(int p1, int p2, UOP_SectionData* sectionData);
 	static int AddVertexToSection(FVector v, UOP_SectionData* sectionData);

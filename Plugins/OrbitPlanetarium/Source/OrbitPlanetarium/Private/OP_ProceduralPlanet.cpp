@@ -122,39 +122,36 @@ TArray<UOP_SectionData*> AOP_ProceduralPlanet::GenerateIcosahedronSectionData(UO
 
 	// Create and initialise the section array
 	TArray<UOP_SectionData* > icoSections;
-	for (int i = 0; i < NUM_SECTIONS; i++)
-	{
-		icoSections.Add(NewObject<UOP_SectionData>(outer)); 
-	}
 
 	// Create the 20 faces of the icosahedron as seperate mesh sections
-	SetupSection(icoSections[0], vs0, vs11, vs5);
-	SetupSection(icoSections[1], vs0, vs5, vs1);
-	SetupSection(icoSections[2], vs0, vs1, vs7);
-	SetupSection(icoSections[3], vs0, vs7, vs10);
-	SetupSection(icoSections[4], vs0, vs10, vs11);
-	SetupSection(icoSections[5], vs1, vs5, vs9);
-	SetupSection(icoSections[6], vs5, vs11, vs4);
-	SetupSection(icoSections[7], vs11, vs10, vs2);
-	SetupSection(icoSections[8], vs10, vs7, vs6);
-	SetupSection(icoSections[9], vs7, vs1, vs8);
-	SetupSection(icoSections[10], vs3, vs9, vs4);
-	SetupSection(icoSections[11], vs3, vs4, vs2);
-	SetupSection(icoSections[12], vs3, vs2, vs6);
-	SetupSection(icoSections[13], vs3, vs6, vs8);
-	SetupSection(icoSections[14], vs3, vs8, vs9);
-	SetupSection(icoSections[15], vs4, vs9, vs5);
-	SetupSection(icoSections[16], vs2, vs4, vs11);
-	SetupSection(icoSections[17], vs6, vs2, vs10);
-	SetupSection(icoSections[18], vs8, vs6, vs7);
-	SetupSection(icoSections[19], vs9, vs8, vs1);
+	icoSections.Add(SetupSection( vs0, vs11, vs5, outer));
+	icoSections.Add(SetupSection(vs0, vs5, vs1, outer));
+	icoSections.Add(SetupSection(vs0, vs1, vs7, outer));
+	icoSections.Add(SetupSection(vs0, vs7, vs10, outer));
+	icoSections.Add(SetupSection(vs0, vs10, vs11, outer));
+	icoSections.Add(SetupSection(vs1, vs5, vs9, outer));
+	icoSections.Add(SetupSection(vs5, vs11, vs4, outer));
+	icoSections.Add(SetupSection(vs11, vs10, vs2, outer));
+	icoSections.Add(SetupSection(vs10, vs7, vs6, outer));
+	icoSections.Add(SetupSection(vs7, vs1, vs8, outer));
+	icoSections.Add(SetupSection(vs3, vs9, vs4, outer));
+	icoSections.Add(SetupSection(vs3, vs4, vs2, outer));
+	icoSections.Add(SetupSection(vs3, vs2, vs6, outer));
+	icoSections.Add(SetupSection(vs3, vs6, vs8, outer));
+	icoSections.Add(SetupSection(vs3, vs8, vs9, outer));
+	icoSections.Add(SetupSection(vs4, vs9, vs5, outer));
+	icoSections.Add(SetupSection(vs2, vs4, vs11, outer));
+	icoSections.Add(SetupSection(vs6, vs2, vs10, outer));
+	icoSections.Add(SetupSection(vs8, vs6, vs7, outer));
+	icoSections.Add(SetupSection(vs9, vs8, vs1, outer));
 
 	// Return the icosahedron
 	return icoSections;
 }
 
-void AOP_ProceduralPlanet::SetupSection(UOP_SectionData * sectionData, FRuntimeMeshVertexSimple vs0, FRuntimeMeshVertexSimple vs1, FRuntimeMeshVertexSimple vs2)
+UOP_SectionData* AOP_ProceduralPlanet::SetupSection(FRuntimeMeshVertexSimple vs0, FRuntimeMeshVertexSimple vs1, FRuntimeMeshVertexSimple vs2, UObject* outer)
 {
+	UOP_SectionData* sectionData = NewObject<UOP_SectionData>(outer);
 	sectionData->Vertices.Add(vs0);
 	sectionData->Vertices.Add(vs1);
 	sectionData->Vertices.Add(vs2);
@@ -164,6 +161,8 @@ void AOP_ProceduralPlanet::SetupSection(UOP_SectionData * sectionData, FRuntimeM
 
 	// Calc section normal
 	sectionData->SectionNormal = ((vs0.Position + vs1.Position + vs2.Position) / 3).GetSafeNormal();
+
+	return sectionData;
 }
 
 int AOP_ProceduralPlanet::GetMiddlePointOnSection(int p1, int p2, UOP_SectionData * sectionData)
@@ -886,7 +885,7 @@ int AOP_ProceduralPlanet::GetCurrentLODLevel(FVector target, FVector LODobject, 
 	float angle = FMath::Acos(FVector::DotProduct(sectionNormal, -camPosNrm));
 
 	// Check if the section is occluded
-	if (angle * (180.0f / PI) > 90.0f) { return 1; }
+	if (angle * (180.0f / PI) > 70.0f) { return 1; }
 
 	// if not then calculate LOD from distance
 	float dist = (LODobject - target).Size();
