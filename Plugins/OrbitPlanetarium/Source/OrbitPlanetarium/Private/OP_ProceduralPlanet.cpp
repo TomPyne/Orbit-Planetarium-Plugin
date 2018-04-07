@@ -33,6 +33,12 @@ AOP_ProceduralPlanet::AOP_ProceduralPlanet()
 
 	RTMComponent = CreateDefaultSubobject<URuntimeMeshComponent>(TEXT("Mesh"));
 	RootComponent = RTMComponent;
+
+	// Ensure previous LODs are set to a high number to ensure LOD 0 is generated
+	for (int i = 0; i < NUM_SECTIONS; i++)
+	{
+		PreviousLODs[i] = 127;
+	}
 }
 
 // Called when the game starts or when spawned
@@ -116,7 +122,10 @@ TArray<UOP_SectionData*> AOP_ProceduralPlanet::GenerateIcosahedronSectionData(UO
 
 	// Create and initialise the section array
 	TArray<UOP_SectionData* > icoSections;
-	for (int i = 0; i < 20; i++) { icoSections.Add(NewObject<UOP_SectionData>(outer)); }
+	for (int i = 0; i < NUM_SECTIONS; i++)
+	{
+		icoSections.Add(NewObject<UOP_SectionData>(outer)); 
+	}
 
 	// Create the 20 faces of the icosahedron as seperate mesh sections
 	SetupSection(icoSections[0], vs0, vs11, vs5);
@@ -281,11 +290,11 @@ void AOP_ProceduralPlanet::UpdatePlanetMeshSections()
 	}
 
 	// Check mesh has already been created
-	bool updateMesh = RTMComponent->GetNumSections() == 20;
+	bool updateMesh = RTMComponent->GetNumSections() == NUM_SECTIONS;
 
 	// Check base icosahedron exists
 	// If not, create it
-	if (CachedIcosahedron.Num() != 20)
+	if (CachedIcosahedron.Num() != NUM_SECTIONS)
 	{
 		CachedIcosahedron = GenerateIcosahedronSectionData(this);
 	}
@@ -298,7 +307,7 @@ void AOP_ProceduralPlanet::UpdatePlanetMeshSections()
 	TArray<uint8> sectionsToUpdate;
 
 	// Try and get a cached version of each section, and create the section if the cache is missing
-	for (int i = 0; i < 20; i++)
+	for (int i = 0; i < NUM_SECTIONS; i++)
 	{
 		/* Use base icosahedron to determine section normal.
 		   Get the LOD level of the section */
@@ -356,7 +365,7 @@ UOP_SectionData* AOP_ProceduralPlanet::TryGetCachedSectionData(uint8 LODLevel, i
 	if (cachedDataPtr != nullptr)
 	{
 		cachedData = *cachedDataPtr;
-		if (cachedData->Data.Num() == 20 && section >= 0 && section < 20)
+		if (cachedData->Data.Num() == NUM_SECTIONS && section >= 0 && section < NUM_SECTIONS)
 		{
 			return cachedData->Data[section];
 		}
@@ -377,7 +386,7 @@ void AOP_ProceduralPlanet::CacheSectionData(UOP_SectionData * sectionData, uint8
 		if (cachedDataPtr == nullptr)
 		{
 			UOP_SectionDataContainer* sdc = NewObject<UOP_SectionDataContainer>(this);
-			for (int i = 0; i < 20; i++)
+			for (int i = 0; i < NUM_SECTIONS; i++)
 			{
 				sdc->Data.Add(NewObject<UOP_SectionData>(this));
 			}
@@ -884,9 +893,10 @@ int AOP_ProceduralPlanet::GetCurrentLODLevel(FVector target, FVector LODobject, 
 
 	for (int i = 0; i < LODDistances.Num(); i++)
 	{
-		if (dist < LODDistances[i])
+		if (fabs(Radius - dist) < LODDistances[i])
 		{
-			return i;
+
+			return LODDistances.Num() - i;
 		}
 	}
 	// if outside all bounds return 0 indicating min

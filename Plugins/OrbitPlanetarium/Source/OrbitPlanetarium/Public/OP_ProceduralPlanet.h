@@ -151,6 +151,9 @@ public:
 	// Sets default values for this actor's properties
 	AOP_ProceduralPlanet();
 
+
+	static const int NUM_SECTIONS = 20;
+
 	FTimerHandle TimerHandle_UpdateMesh;
 	
 	UPROPERTY(EditAnywhere)
