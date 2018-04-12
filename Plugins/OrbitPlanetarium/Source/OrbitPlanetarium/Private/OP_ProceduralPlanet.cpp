@@ -257,19 +257,26 @@ void AOP_ProceduralPlanet::GetVertexPositionFromNoise(FRuntimeMeshVertexSimple &
 	float height = NoiseCube->SampleNoiseCube(n);
 	height += RoughnessInfluence * RoughNoiseCube->SampleNoiseCube(n);
 
+	// Clamp the height from range -1..1 to 0..1
+	height = (height + 1.0f) / 2.0f;
+
 	// Boosts the output
-	float boostedHeight = height *  Boost;
+	//float boostedHeight = height *  Boost;
+	// modify boosted height to use water level
+	if (height < MinWaterLevel)
+	{
+		height = MinWaterLevel;
+	}
 
 	// Convert to spherical coords
 	FOP_SphericalCoords sCoords = FOP_SphericalCoords(vert.Position);
-	sCoords.Radius += Radius + (boostedHeight * Scale);
+	sCoords.Radius += Radius + (height * Scale);
 
 	// convert back to cartesian and apply to vertex
 	vert.Position = sCoords.ToCartesian();
 	
 	// VertexColor
-	float vColorVal = (height + 1.0f) / 2.0f;
-	vert.Color = FColor(255 * -vColorVal, 255 * -vColorVal, 255 * -vColorVal);
+	vert.Color = FColor(255 * -height, 255 * -height, 255 * -height);
 	
 }
 
