@@ -78,10 +78,10 @@ void AOP_ProceduralPlanet::GenerateNoiseCubes()
 	}
 
 	NoiseCube = NewObject<UOP_NoiseCube>(this);
-	NoiseCube->Init(256, NoiseType, Seed, Frequency, FractalGain, Interpolation, FractalType, Octaves, Lacunarity, heightMapDecals);
+	NoiseCube->Init(512, NoiseType, Seed, Frequency, FractalGain, Interpolation, FractalType, Octaves, Lacunarity, heightMapDecals);
 
 	RoughNoiseCube = NewObject<UOP_NoiseCube>(this);
-	RoughNoiseCube->Init(256, RoughNoiseType, Seed, RoughFrequency, RoughFractalGain, RoughInterpolation, RoughFractalType, RoughOctaves, RoughLacunarity);
+	RoughNoiseCube->Init(512, RoughNoiseType, Seed, RoughFrequency, RoughFractalGain, RoughInterpolation, RoughFractalType, RoughOctaves, RoughLacunarity);
 }
 
 TArray<UOP_SectionData*> AOP_ProceduralPlanet::GenerateIcosahedronSectionData(UObject* outer)
@@ -234,21 +234,23 @@ void AOP_ProceduralPlanet::ApplyNoiseToMeshSection(UOP_SectionData * sectionData
 	TArray<FRuntimeMeshVertexSimple> v2;
 	for (FRuntimeMeshVertexSimple v : sectionData->Vertices)
 	{
-		FRuntimeMeshVertexSimple temp = v;
+		//FRuntimeMeshVertexSimple temp = v;
 		FVector normal = (pos - v.Position).GetSafeNormal();
-		temp.Position = GetVertexPositionFromNoise(v.Position, normal);
-		v2.Add(temp);
+		GetVertexPositionFromNoise(v, normal);
+		v2.Add(v);
+		/*temp.Position = GetVertexPositionFromNoise(v.Position, normal);
+		v2.Add(temp);*/
 	}
 
 	sectionData->Vertices = v2;
 }
 
-FVector AOP_ProceduralPlanet::GetVertexPositionFromNoise(FVector v, FVector n)
+void AOP_ProceduralPlanet::GetVertexPositionFromNoise(FRuntimeMeshVertexSimple &vert, FVector n)
 {
 	if (NoiseCube == nullptr || RoughNoiseCube == nullptr)
 	{
 		UE_LOG(LogTemp, Warning, TEXT("No NoiseCube or RoughNoiseCube found AOP_ProceduralPlanet::GetVertexPositionFromNoise"));
-		return v;
+		return;
 	}
 
 	// Get height from noise cubes
@@ -256,14 +258,19 @@ FVector AOP_ProceduralPlanet::GetVertexPositionFromNoise(FVector v, FVector n)
 	height += RoughnessInfluence * RoughNoiseCube->SampleNoiseCube(n);
 
 	// Boosts the output
-	height *= Boost;
+	float boostedHeight = height *  Boost;
 
 	// Convert to spherical coords
-	FOP_SphericalCoords sCoords = FOP_SphericalCoords(v);
-	sCoords.Radius += Radius + (height * Scale);
+	FOP_SphericalCoords sCoords = FOP_SphericalCoords(vert.Position);
+	sCoords.Radius += Radius + (boostedHeight * Scale);
 
-	// convert back to cartesian and return
-	return sCoords.ToCartesian();
+	// convert back to cartesian and apply to vertex
+	vert.Position = sCoords.ToCartesian();
+	
+	// VertexColor
+	float vColorVal = (height + 1.0f) / 2.0f;
+	vert.Color = FColor(255 * -vColorVal, 255 * -vColorVal, 255 * -vColorVal);
+	
 }
 
 
@@ -347,14 +354,15 @@ void AOP_ProceduralPlanet::UpdatePlanetMeshSections()
 		for (int i = 0; i < CachedIcosahedron.Num(); i++)
 		{
 			RTMComponent->CreateMeshSection(i, CachedIcosahedron[i]->Vertices, CachedIcosahedron[i]->Triangles);
-		}
+			if (Material) { RTMComponent->SetMaterial(i, Material); }
+		}		
 	}
 
-		for (int i = 0; i < sectionsToUpdate.Num(); i++)
-		{ 
-			int index = sectionsToUpdate[i];
-			RTMComponent->UpdateMeshSection(index, sections[i]->Vertices, sections[i]->Triangles);
-		}
+	for (int i = 0; i < sectionsToUpdate.Num(); i++)
+	{ 
+		int index = sectionsToUpdate[i];
+		RTMComponent->UpdateMeshSection(index, sections[i]->Vertices, sections[i]->Triangles);
+	}
 }
 
 UOP_SectionData* AOP_ProceduralPlanet::TryGetCachedSectionData(uint8 LODLevel, int section)

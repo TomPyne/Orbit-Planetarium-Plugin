@@ -300,8 +300,7 @@ public:
 
 	void ApplyNoiseToMeshSection(UOP_SectionData* sectionData);
 
-	FVector GetVertexPositionFromNoise(FVector v, FVector n); // ???
-
+	void GetVertexPositionFromNoise(FRuntimeMeshVertexSimple &vert, FVector n);
 	void UpdatePlanetMeshSections();
 
 	uint8 PreviousLODs[20];
