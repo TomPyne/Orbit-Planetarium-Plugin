@@ -12,6 +12,7 @@
 #include "OP_NoiseCube.h"
 #include "OP_HeightmapDecal.h"
 #include "OP_SplatMaterialData.h"
+#include "OP_SurfaceFeature.h"
 #include "Runtime/CoreUObject/Public/UObject/NoExportTypes.h"
 #include "PackedNormal.h"
 
@@ -69,12 +70,14 @@ void AOP_ProceduralPlanet::GenerateNoiseCubes()
 {
 	TArray<UOP_HeightmapDecal* > heightMapDecals;
 	// Create the HeightmapDecals
-	for (UTexture2D* decal : Decals)
+	for (UOP_SurfaceFeature* decal : Decals)
 	{
-		UOP_HeightmapDecal* hmd = NewObject<UOP_HeightmapDecal>(this);
-		
-		hmd->CreateDecal(decal->GetSizeX(), decal, 4);
-		heightMapDecals.Add(hmd);
+		if (decal && decal->HeightMap)
+		{
+			UOP_HeightmapDecal* hmd = NewObject<UOP_HeightmapDecal>(this);
+			hmd->CreateDecal(decal->HeightMap->GetSizeX(), decal->HeightMap, decal->MaxAmount);
+			heightMapDecals.Add(hmd);
+		}		
 	}
 
 	NoiseCube = NewObject<UOP_NoiseCube>(this);

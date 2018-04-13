@@ -275,7 +275,7 @@ public:
 	float Boost = 1.4f;
 
 	UPROPERTY(EditAnywhere, Category = "Cube")
-	TArray<UTexture2D*> Decals;
+	TArray<class UOP_SurfaceFeature* > Decals;
 
 	// MATERIAL ///////////////////////////////////////////////////////////////////
 	TArray<class UOP_SplatMaterialData* > SplatMaterials;
