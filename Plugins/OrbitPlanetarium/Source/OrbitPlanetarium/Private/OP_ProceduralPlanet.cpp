@@ -73,15 +73,18 @@ void AOP_ProceduralPlanet::GenerateNoiseCubes()
 	{
 		UOP_HeightmapDecal* hmd = NewObject<UOP_HeightmapDecal>(this);
 		
-		hmd->CreateDecal(decal->GetSizeX(), decal, 10);
+		hmd->CreateDecal(decal->GetSizeX(), decal, 4);
 		heightMapDecals.Add(hmd);
 	}
 
 	NoiseCube = NewObject<UOP_NoiseCube>(this);
-	NoiseCube->Init(512, NoiseType, Seed, Frequency, FractalGain, Interpolation, FractalType, Octaves, Lacunarity, heightMapDecals);
+	NoiseCube->Init(1024, NoiseType, Seed, Frequency, FractalGain, Interpolation, FractalType, Octaves, Lacunarity, heightMapDecals);
 
 	RoughNoiseCube = NewObject<UOP_NoiseCube>(this);
-	RoughNoiseCube->Init(512, RoughNoiseType, Seed, RoughFrequency, RoughFractalGain, RoughInterpolation, RoughFractalType, RoughOctaves, RoughLacunarity);
+	RoughNoiseCube->Init(1024, RoughNoiseType, Seed, RoughFrequency, RoughFractalGain, RoughInterpolation, RoughFractalType, RoughOctaves, RoughLacunarity);
+
+	cubemap = NoiseCube->GetCubeTextures();
+	Steepnessmap = NoiseCube->GetSteepnessTextures();
 }
 
 TArray<UOP_SectionData*> AOP_ProceduralPlanet::GenerateIcosahedronSectionData(UObject* outer)
@@ -276,7 +279,7 @@ void AOP_ProceduralPlanet::GetVertexPositionFromNoise(FRuntimeMeshVertexSimple &
 	vert.Position = sCoords.ToCartesian();
 	
 	// VertexColor
-	vert.Color = FColor(255 * -height, 255 * -height, 255 * -height);
+	vert.Color = FColor(255 * height, 255 * height, 255 * height);
 	
 }
 

@@ -143,7 +143,7 @@ UTexture2D * UOP_NoiseCube::NoiseToTexture(const TArray<float> &data, int resolu
 	{
 		for (int x = 0; x < resolution; x++)
 		{
-			float height = data[(y * resolution) + x];
+			float height = (data[(y * resolution) + x] + 1.0f) / 2.0f;
 			colorMap[index] = FColor(height * 255, height * 255, height * 255);
 			index++;
 		}
@@ -221,8 +221,7 @@ TArray<float> UOP_NoiseCube::CreateFlatNoiseArray(UFastNoise * noiseGen, int res
 
 void UOP_NoiseCube::ApplyHeightDecalsToFace(TArray<float> &data, UOP_HeightmapDecal * decal, int num)
 {
-	float scale = FMath::RandRange(0.1f, 0.6f);
-	decal->ApplyDecalToNoiseMap(data, Resolution, scale, num, true);
+	decal->ApplyDecalToNoiseMap(data, Resolution, 1.0f, 1.0f, num);
 }
 
 float UOP_NoiseCube::GetXHeight(float perc, FVector pos)

@@ -26,8 +26,7 @@ public:
 	// noiseMapResolution = the power2 resolution of the noisemap
 	// scale = the scale of the decal when applied to the noisemap
 	// num = the number of decals you want to apply
-	// additive = should the decal influence the existing data or replace it
-	void ApplyDecalToNoiseMap(TArray<float> &noiseMap, int noiseMapResolution, float scale, int num = 1, bool additive = false);
+	void ApplyDecalToNoiseMap(TArray<float> &noiseMap, int noiseMapResolution, float minScale, float maxScale, int num = 1);
 
 	int MaxFrequency = 0;
 private:
