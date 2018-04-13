@@ -19,7 +19,6 @@ void FOP_ProceduralPlanetDetails::CustomizeDetails(IDetailLayoutBuilder & Detail
 
 	const FText GeneratePlanetText = LOCTEXT("GeneratePlanet", "Generate Planet");
 	const FText ClearPlanetText = LOCTEXT("ClearPlanet", "Clear Planet");
-	const FText UpdatePlanetText = LOCTEXT("UpdatePlanet", "Update Planet");
 
 	// Cache set of selected things
 	SelectedObjectsList = DetailBuilder.GetDetailsView().GetSelectedObjects();
@@ -73,7 +72,7 @@ FReply FOP_ProceduralPlanetDetails::ClickedOnGeneratePlanet()
 	AOP_ProceduralPlanet* procPlanet = GetFirstSelectedProceduralPlanet();
 	if (procPlanet != nullptr)
 	{
-		procPlanet->GeneratePlanet(true);
+		procPlanet->UpdatePlanetMeshSections();
 	}
 
 	return FReply::Handled();
