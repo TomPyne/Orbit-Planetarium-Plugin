@@ -7,9 +7,6 @@
 #include "Modules/ModuleManager.h"
 
 
-
-
-
 class IOrbitPlanetariumEditorPlugin : public IModuleInterface
 {
 
