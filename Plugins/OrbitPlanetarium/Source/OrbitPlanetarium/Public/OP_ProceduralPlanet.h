@@ -10,22 +10,6 @@
 #include "OP_ProceduralPlanet.generated.h"
 
 USTRUCT()
-struct FOP_TriangleIndices
-{
-	GENERATED_USTRUCT_BODY()
-
-		int V1, V2, V3;
-
-	FOP_TriangleIndices() { V1 = V2 = V3 = 0; }
-	FOP_TriangleIndices(int v1, int v2, int v3)
-	{
-		V1 = v1;
-		V2 = v2;
-		V3 = v3;
-	}
-};
-
-USTRUCT()
 struct FOP_SphericalCoords
 {
 	GENERATED_USTRUCT_BODY()
@@ -61,43 +45,6 @@ struct FOP_SphericalCoords
 };
 
 UCLASS()
-class ORBITPLANETARIUM_API UOP_PlanetData : public UObject
-{
-	GENERATED_BODY()
-
-public:
-	// Default Constructor
-	UOP_PlanetData() {}
-
-	UPROPERTY()
-	TArray<FVector> Vertices;
-
-	UPROPERTY()
-	TArray<int32> Triangles;
-
-	UPROPERTY()
-	TArray<FVector> Normals;
-
-	UPROPERTY()
-	TArray<FVector2D> UV;
-
-	UPROPERTY()
-	TArray<FLinearColor> LinearVertexColours;
-
-	UPROPERTY()
-	TArray<FColor> VertexColours;
-
-	UPROPERTY()
-	TArray<FProcMeshTangent> Tangents;
-
-	int32 Index = 0;
-
-	FORCEINLINE bool IsPopulated() { return Vertices.Num() > 0 && Triangles.Num() > 0; }
-
-	FString ToString();
-};
-
-UCLASS()
 class UOP_SectionData : public UObject
 {
 	GENERATED_BODY()
@@ -128,6 +75,7 @@ public:
 	}
 };
 
+
 UCLASS()
 class UOP_SectionDataContainer : public UObject
 {
@@ -151,23 +99,12 @@ public:
 	// Sets default values for this actor's properties
 	AOP_ProceduralPlanet();
 
-
 	static const int NUM_SECTIONS = 20;
 
 	FTimerHandle TimerHandle_UpdateMesh;
 	
 	UPROPERTY(EditAnywhere)
 	float MeshUpdateRate = 2.0f;
-
-	// LOD ////////////////////////////////////////////////////////////////////////
-
-	// Use the assigned LOD over the one generated
-	UPROPERTY(EditAnywhere, Category = LOD)
-	bool bOverrideLOD = false;
-
-	// The current LOD level or the LOD level used on startup if bOverrideLOD is true
-	UPROPERTY(EditAnywhere, Category = LOD)
-	uint8 currentLOD = 0;
 
 	// Random //////////////////////////////////////////////////////////////////////
 
@@ -277,8 +214,6 @@ public:
 	UPROPERTY(EditAnywhere, Instanced, Category = "Cube")
 	TArray<class UOP_SurfaceFeature* > Decals;
 
-	// MATERIAL ///////////////////////////////////////////////////////////////////
-	TArray<class UOP_SplatMaterialData* > SplatMaterials;
 
 	// SECTIONDATA ///////////////////////////////////////////////////////////////////
 
@@ -318,25 +253,6 @@ public:
 	// then while the distance is < 100 the LOD is set to 0
 	UPROPERTY(EditAnywhere, Category = LOD)
 	TArray<float> LODDistances;
-	
-	float LOD1Distance = 300000.0f;
-	float LOD2Distance = 267210.0f; //89070.0f;
-	float LOD3Distance = 226710.0f; //75570.0f;
-	float LOD4Distance = 186210.0f; //62070.0f;
-	float LOD5Distance = 136710.0f; //45570.0f;
-	float LOD6Distance = 96210.0f; //32070.0f;
-	float LOD7Distance = 55710.0f; //18570.0f;
-	float LOD8Distance = 33000.0f; //11000.0f;
-
-	// pre-calculate LOD levels
-	float LOD1DistanceSqrd = 0.0f;
-	float LOD2DistanceSqrd = 0.0f;
-	float LOD3DistanceSqrd = 0.0f;
-	float LOD4DistanceSqrd = 0.0f;
-	float LOD5DistanceSqrd = 0.0f;
-	float LOD6DistanceSqrd = 0.0f;
-	float LOD7DistanceSqrd = 0.0f;
-	float LOD8DistanceSqrd = 0.0f;
 
 	UPROPERTY(VisibleAnywhere, Category = TestTex)
 	UTexture2D* CombinedNoiseTex;
@@ -347,27 +263,15 @@ public:
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
 
-	// Generate the planet
-	void GeneratePlanet(bool bIgnoreLOD);
-
 	// Clear the mesh
 	void ClearPlanet();
 
-
-
 protected:
 
-	// Calculate and cache LOD levels so they only have to be calculated once
-	UPROPERTY()
-	TMap<uint8, UOP_PlanetData* > CachedLODLevels;
 
 	// Reference to the player
 	UPROPERTY()
 	APawn* PlayerPawn;
-
-	// The procedural mesh component
-	UPROPERTY()
-	class UProceduralMeshComponent* ProcMeshComponent;
 
 	// THe runtime mesh component;
 	UPROPERTY(EditAnywhere)
@@ -375,22 +279,6 @@ protected:
 
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
-
-	// Add a vertex to the planet data
-	static int AddVertex(FVector v, UOP_PlanetData* planet);
-	static int GetMiddlePoint(int p1, int p2, UOP_PlanetData* planet);
-
-	// Checks if LOD is cached and returns a TArray, if the TArray is empty, there are no cached LODs
-	UOP_PlanetData* TryGetCachedLOD(uint8 LOD);
-	void CacheLOD(uint8 LOD, UOP_PlanetData* data);
-
-	// Check LOD range and create mesh based on that range, bForceGeneration is used if you
-	// want to update the mesh even if the LOD is the same
-	void CheckLODRange(bool bForceGeneration);
-
-	void GenerateHeatMapTex(UOP_PlanetData* planetData);
-
-	void GenerateSteepnessMapTex(UOP_PlanetData* planetData);
 
 	int GetCurrentLODLevel(FVector target, FVector LODobject, FVector sectionNormal);
 
