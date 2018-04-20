@@ -58,10 +58,10 @@ void AOP_ProceduralPlanet::GenerateNoiseCubes()
 	}
 
 	NoiseCube = NewObject<UOP_NoiseCube>(this);
-	NoiseCube->Init(1024, NoiseType, Seed, Frequency, FractalGain, Interpolation, FractalType, Octaves, Lacunarity, heightMapDecals);
+	NoiseCube->Init(1024, NoiseType, Seed, Frequency, FractalGain, Interpolation, FractalType, Octaves, Lacunarity);
 
 	RoughNoiseCube = NewObject<UOP_NoiseCube>(this);
-	RoughNoiseCube->Init(1024, RoughNoiseType, Seed, RoughFrequency, RoughFractalGain, RoughInterpolation, RoughFractalType, RoughOctaves, RoughLacunarity);
+	RoughNoiseCube->Init(1024, RoughNoiseType, Seed, RoughFrequency, RoughFractalGain, RoughInterpolation, RoughFractalType, RoughOctaves, RoughLacunarity, heightMapDecals);
 
 	cubemap = NoiseCube->GetCubeTextures();
 	Steepnessmap = NoiseCube->GetSteepnessTextures();
