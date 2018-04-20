@@ -274,7 +274,7 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Cube")
 	float Boost = 1.4f;
 
-	UPROPERTY(EditAnywhere, Category = "Cube")
+	UPROPERTY(EditAnywhere, Instanced, Category = "Cube")
 	TArray<class UOP_SurfaceFeature* > Decals;
 
 	// MATERIAL ///////////////////////////////////////////////////////////////////

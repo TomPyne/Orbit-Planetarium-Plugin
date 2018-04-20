@@ -9,7 +9,7 @@
 /**
  * 
  */
-UCLASS( EditInlineNew)
+UCLASS(EditInlineNew)
 class ORBITPLANETARIUM_API UOP_SurfaceFeature : public UDataAsset
 {
 	GENERATED_BODY()
@@ -17,10 +17,10 @@ class ORBITPLANETARIUM_API UOP_SurfaceFeature : public UDataAsset
 public:
 
 	// The Heightmap decal
-	UPROPERTY(EditDefaultsOnly, Instanced)
+	UPROPERTY(EditAnywhere)
 	class UTexture2D* HeightMap;
 	
 	// The maximum amount that can appear on a surface
-	UPROPERTY(EditDefaultsOnly)
+	UPROPERTY(EditAnywhere )
 	int MaxAmount = 10;	
 };
