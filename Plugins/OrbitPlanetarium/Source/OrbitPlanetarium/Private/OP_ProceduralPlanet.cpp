@@ -61,10 +61,14 @@ void AOP_ProceduralPlanet::GenerateNoiseCubes()
 	NoiseCube->Init(1024, NoiseType, Seed, Frequency, FractalGain, Interpolation, FractalType, Octaves, Lacunarity);
 
 	RoughNoiseCube = NewObject<UOP_NoiseCube>(this);
-	RoughNoiseCube->Init(1024, RoughNoiseType, Seed, RoughFrequency, RoughFractalGain, RoughInterpolation, RoughFractalType, RoughOctaves, RoughLacunarity, heightMapDecals);
+	//RoughNoiseCube->Init(1024, RoughNoiseType, Seed, RoughFrequency, RoughFractalGain, RoughInterpolation, RoughFractalType, RoughOctaves, RoughLacunarity, heightMapDecals);
 
-	cubemap = NoiseCube->GetCubeTextures();
-	Steepnessmap = NoiseCube->GetSteepnessTextures();
+	if (bGenerateDebugTextures)
+	{
+		cubemap = NoiseCube->GetCubeTextures();
+		//Steepnessmap = NoiseCube->GetSteepnessTextures();
+	}
+
 }
 
 TArray<UOP_SectionData*> AOP_ProceduralPlanet::GenerateIcosahedronSectionData(UObject* outer)
@@ -238,7 +242,7 @@ void AOP_ProceduralPlanet::GetVertexPositionFromNoise(FRuntimeMeshVertexSimple &
 
 	// Get height from noise cubes
 	float height = NoiseCube->SampleNoiseCube(n);
-	height += RoughnessInfluence * RoughNoiseCube->SampleNoiseCube(n);
+	//height += RoughnessInfluence * RoughNoiseCube->SampleNoiseCube(n);
 
 	// Clamp the height from range -1..1 to 0..1
 	height = (height + 1.0f) / 2.0f;

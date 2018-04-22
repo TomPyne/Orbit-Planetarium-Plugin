@@ -118,6 +118,9 @@ public:
 
 	// Generation ///////////////////////////////////////////////////////////////////
 
+	UPROPERTY(EditAnywhere, Category = "TerrainGen")
+	bool bGenerateDebugTextures;
+
 	// Noise type to use
 	UPROPERTY(EditAnywhere, Category = "TerrainGen")
 	EFractalNoiseType NoiseType;

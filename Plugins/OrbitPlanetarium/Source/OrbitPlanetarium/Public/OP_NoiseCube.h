@@ -124,33 +124,53 @@ protected:
 
 	// CubeMap
 	UPROPERTY()
-		UFastNoise* NoiseGenerator_XPos;
+	UFastNoise* NoiseGenerator_XPos;
 
 	UPROPERTY()
-		UFastNoise* NoiseGenerator_XNeg;
+	UFastNoise* NoiseGenerator_XNeg;
 
 	UPROPERTY()
-		UFastNoise* NoiseGenerator_YPos;
+	UFastNoise* NoiseGenerator_YPos;
 
 	UPROPERTY()
-		UFastNoise* NoiseGenerator_YNeg;
+	UFastNoise* NoiseGenerator_YNeg;
 
 	UPROPERTY()
-		UFastNoise* NoiseGenerator_ZPos;
+	UFastNoise* NoiseGenerator_ZPos;
 
 	UPROPERTY()
-		UFastNoise* NoiseGenerator_ZNeg;
+	UFastNoise* NoiseGenerator_ZNeg;
+
+	UPROPERTY()
+	UFastNoise* DetailNoiseGenerator_XPos;
+
+	UPROPERTY()
+	UFastNoise* DetailNoiseGenerator_XNeg;
+
+	UPROPERTY()
+	UFastNoise* DetailNoiseGenerator_YPos;
+
+	UPROPERTY()
+	UFastNoise* DetailNoiseGenerator_YNeg;
+
+	UPROPERTY()
+	UFastNoise* DetailNoiseGenerator_ZPos;
+
+	UPROPERTY()
+	UFastNoise* DetailNoiseGenerator_ZNeg;
 
 	static UTexture2D* NoiseToTexture(const TArray<float> &data, int resolution, UObject* outer, FString name);
 	
 	UFastNoise* CreateNoiseGenerator(FNoiseGeneratorParameters params, int32 seed, UObject* outer);
 
 	// Uses the noise generator to create a heightmap array, samples between 0 and 1
-	TArray<float> CreateFlatNoiseArray(UFastNoise* noiseGen, int resolution, float offset);
+	TArray<float> CreateFlatNoiseArray(UFastNoise * noiseGen, UFastNoise* detailNoiseGen, int resolution, float offset);
 
 	void ApplyHeightDecalsToFace(TArray<float> &data, UOP_HeightmapDecal* decal, int num);
 
 private:
+
+	int Octaves = 1;
 
 	// The resolution of each of the cube faces
 	int Resolution = 128;

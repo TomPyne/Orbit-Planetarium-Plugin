@@ -25,28 +25,34 @@ void UOP_NoiseCube::Init(int resolution,
 		fractalGain,
 		interpolation,
 		fractalType,
-		octaves,
+		Octaves,
 		lacunarity
 	);
 
-	// X+
+	// Create the noise generators
 	NoiseGenerator_XPos = CreateNoiseGenerator(params, seed, this);
-	XPosHeight = CreateFlatNoiseArray(NoiseGenerator_XPos, resolution, 0.0f);
-	// X-
 	NoiseGenerator_XNeg = CreateNoiseGenerator(params, seed + 10, this);
-	XNegHeight = CreateFlatNoiseArray(NoiseGenerator_XNeg, resolution, 1.0f);
-	// Y+
 	NoiseGenerator_YPos = CreateNoiseGenerator(params, seed + 20, this);
-	YPosHeight = CreateFlatNoiseArray(NoiseGenerator_YPos, resolution, 2.0f);
-	// Y-
 	NoiseGenerator_YNeg = CreateNoiseGenerator(params, seed + 30, this);
-	YNegHeight = CreateFlatNoiseArray(NoiseGenerator_YNeg, resolution, 3.0f);
-	// Z+
 	NoiseGenerator_ZPos = CreateNoiseGenerator(params, seed + 40, this);
-	ZPosHeight = CreateFlatNoiseArray(NoiseGenerator_ZPos, resolution, 4.0f);
-	// Z-
 	NoiseGenerator_ZNeg = CreateNoiseGenerator(params, seed + 50, this);
-	ZNegHeight = CreateFlatNoiseArray(NoiseGenerator_ZNeg, resolution, 5.0f);
+
+	// Create the detail noise generators
+	params.FractalType = EFractalType::Billow;
+	DetailNoiseGenerator_XPos = CreateNoiseGenerator(params, seed, this);
+	DetailNoiseGenerator_XNeg = CreateNoiseGenerator(params, seed + 10, this);
+	DetailNoiseGenerator_YPos = CreateNoiseGenerator(params, seed + 20, this);
+	DetailNoiseGenerator_YNeg = CreateNoiseGenerator(params, seed + 30, this);
+	DetailNoiseGenerator_ZPos = CreateNoiseGenerator(params, seed + 40, this);
+	DetailNoiseGenerator_ZNeg = CreateNoiseGenerator(params, seed + 50, this);
+
+	// Create the flat arrays
+	XPosHeight = CreateFlatNoiseArray(NoiseGenerator_XPos, DetailNoiseGenerator_XPos, resolution, 0.0f);
+	XNegHeight = CreateFlatNoiseArray(NoiseGenerator_XNeg, DetailNoiseGenerator_XNeg, resolution, 1.0f);
+	YPosHeight = CreateFlatNoiseArray(NoiseGenerator_YPos, DetailNoiseGenerator_YPos, resolution, 2.0f);
+	YNegHeight = CreateFlatNoiseArray(NoiseGenerator_YNeg, DetailNoiseGenerator_YNeg, resolution, 3.0f);
+	ZPosHeight = CreateFlatNoiseArray(NoiseGenerator_ZPos, DetailNoiseGenerator_ZPos, resolution, 4.0f);
+	ZNegHeight = CreateFlatNoiseArray(NoiseGenerator_ZNeg, DetailNoiseGenerator_ZNeg, resolution, 5.0f);
 }
 
 
@@ -190,9 +196,9 @@ UFastNoise * UOP_NoiseCube::CreateNoiseGenerator(FNoiseGeneratorParameters param
 	return noiseGen;
 }
 
-TArray<float> UOP_NoiseCube::CreateFlatNoiseArray(UFastNoise * noiseGen, int resolution, float offset)
+TArray<float> UOP_NoiseCube::CreateFlatNoiseArray(UFastNoise * noiseGen, UFastNoise* detailNoiseGen, int resolution, float offset)
 {
-	if (noiseGen == nullptr)
+	if (noiseGen == nullptr || detailNoiseGen == nullptr)
 	{
 		UE_LOG(LogTemp, Warning, TEXT("UOP_NoiseCube::CreateFlatNoiseArray noiseGen is null"));
 		return TArray<float>();
@@ -212,7 +218,7 @@ TArray<float> UOP_NoiseCube::CreateFlatNoiseArray(UFastNoise * noiseGen, int res
 			// Get the height at the coordinate
 			float xPos = offset + (x * step);
 			float yPos = y * step;
-			flatArray[(y * resolution) + x] = noiseGen->GetNoise2D(xPos, yPos);
+			flatArray[(y * resolution) + x] = (noiseGen->GetNoise2D(xPos, yPos) * 0.7f) + (detailNoiseGen->GetNoise2D(xPos, yPos) * 0.3f);
 		}
 	}
 
