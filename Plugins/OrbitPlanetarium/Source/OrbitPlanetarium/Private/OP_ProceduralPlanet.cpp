@@ -247,13 +247,8 @@ void AOP_ProceduralPlanet::GetVertexPositionFromNoise(FRuntimeMeshVertexSimple &
 	// Clamp the height from range -1..1 to 0..1
 	height = (height + 1.0f) / 2.0f;
 
-	// Boosts the output
-	//float boostedHeight = height *  Boost;
-	// modify boosted height to use water level
-	if (height < MinWaterLevel)
-	{
-		height = MinWaterLevel;
-	}
+	// Redistribution
+	height = pow(height, Redistribution);
 
 	// Convert to spherical coords
 	FOP_SphericalCoords sCoords = FOP_SphericalCoords(vert.Position);

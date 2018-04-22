@@ -218,10 +218,12 @@ TArray<float> UOP_NoiseCube::CreateFlatNoiseArray(UFastNoise * noiseGen, UFastNo
 			// Get the height at the coordinate
 			float xPos = offset + (x * step);
 			float yPos = y * step;
-			flatArray[(y * resolution) + x] = (noiseGen->GetNoise2D(xPos, yPos) * 0.7f) + (detailNoiseGen->GetNoise2D(xPos, yPos) * 0.3f);
+			float baseHeight = noiseGen->GetNoise2D(xPos, yPos);
+			float detailHeight = detailNoiseGen->GetNoise2D(xPos, yPos);
+			float height = (baseHeight* 0.7f) + (detailHeight * 0.3f);
+			flatArray[(y * resolution) + x] = height;
 		}
 	}
-
 	return flatArray;
 }
 
