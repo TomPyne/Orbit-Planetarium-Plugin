@@ -58,7 +58,7 @@ void AOP_ProceduralPlanet::GenerateNoiseCubes()
 	}
 
 	NoiseCube = NewObject<UOP_NoiseCube>(this);
-	NoiseCube->Init(1024, NoiseType, Seed, Frequency, FractalGain, Interpolation, FractalType, Octaves, Lacunarity);
+	NoiseCube->Init(1024, NoiseType, Seed, Frequency, FractalGain, Interpolation, FractalType, Octaves, Lacunarity, heightMapDecals);
 
 	RoughNoiseCube = NewObject<UOP_NoiseCube>(this);
 	//RoughNoiseCube->Init(1024, RoughNoiseType, Seed, RoughFrequency, RoughFractalGain, RoughInterpolation, RoughFractalType, RoughOctaves, RoughLacunarity, heightMapDecals);
@@ -242,13 +242,16 @@ void AOP_ProceduralPlanet::GetVertexPositionFromNoise(FRuntimeMeshVertexSimple &
 
 	// Get height from noise cubes
 	float height = NoiseCube->SampleNoiseCube(n);
+	//height = height < -1.0f ? -1.0f : height;
 	//height += RoughnessInfluence * RoughNoiseCube->SampleNoiseCube(n);
 
 	// Clamp the height from range -1..1 to 0..1
 	height = (height + 1.0f) / 2.0f;
 
 	// Redistribution
-	height = pow(height, Redistribution);
+	float redistHeight = pow(fabs(height), Redistribution);
+	height = height < 0.0f ? -redistHeight : redistHeight;
+	//height = pow(height, Redistribution);
 
 	// Convert to spherical coords
 	FOP_SphericalCoords sCoords = FOP_SphericalCoords(vert.Position);

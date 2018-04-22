@@ -76,7 +76,9 @@ void UOP_HeightmapDecal::ApplyDecalToNoiseMap(TArray<float>& noiseMap, int noise
 			{
 				int index = (((y - startY) * Resolution) * step) + ((x - startX) * step);
 				float decalHeightSample = (DecalHeightData[index] * 2.0f) - 1.0f;
-				noiseMap[(y * noiseMapResolution) + x] = FMath::Clamp(noiseMap[(y * noiseMapResolution) + x] + decalHeightSample, -1.0f, 1.0f);
+				float height = (noiseMap[(y * noiseMapResolution) + x] + decalHeightSample);
+				noiseMap[(y * noiseMapResolution) + x] = height;
+				
 			}
 		}
 	}	
