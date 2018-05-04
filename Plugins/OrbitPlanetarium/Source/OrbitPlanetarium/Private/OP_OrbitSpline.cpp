@@ -72,6 +72,9 @@ void AOP_OrbitSpline::GenerateSplineForBody(AActor * body, int numPoints, bool p
 	// Close the loop
 	Spline->SetClosedLoop(true);
 
+	// Set the splin centre pos to the parent bodies position
+	UpdateOrbitPostion();
+
 	// If the parent body is moving we need to follow it with this actor
 	if (parentBodyMoving)
 	{

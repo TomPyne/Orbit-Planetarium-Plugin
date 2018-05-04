@@ -155,41 +155,11 @@ public:
 	UPROPERTY(EditAnywhere, Category = "TerrainGen")
 	float MinWaterLevel = 0.2f;
 
-	// ROUGH //////////////////////////////
-
-	// Noise type to use
-	UPROPERTY(EditAnywhere, Category = "TerrainGen")
-		EFractalNoiseType RoughNoiseType;
-
-	UPROPERTY(EditAnywhere, Category = "TerrainGen")
-		int32 RoughOctaves = 6;
-
-	UPROPERTY(EditAnywhere, Category = "TerrainGen")
-		float RoughFrequency = 0.5f;
-
-	UPROPERTY(EditAnywhere, Category = "TerrainGen")
-		EFractalType RoughFractalType;
-
-	UPROPERTY(EditAnywhere, Category = "TerrainGen")
-		float RoughFractalGain = 2.0f;
-
-	UPROPERTY(EditAnywhere, Category = "TerrainGen")
-		float RoughLacunarity = 0.4f;
-
-	UPROPERTY(EditAnywhere, Category = "TerrainGen")
-		EInterp RoughInterpolation;
-
 	// Detail ///////////////////////////////////////////////////////////////////
 
 	// The material to apply to the mesh
 	UPROPERTY(EditAnywhere, Category = "Detail")
 	class UMaterialInterface* Material;
-
-	UPROPERTY(EditAnywhere, Category = "Detail")
-	class UTexture2D* TestHeightDecal;
-
-	UPROPERTY(EditAnywhere, Category = "Detail")
-		class UTexture2D* TestHeightNoise;
 
 	// CUBE ///////////////////////////////////////////////////////////////////
 
@@ -257,12 +227,6 @@ public:
 	UPROPERTY(EditAnywhere, Category = LOD)
 	TArray<float> LODDistances;
 
-	UPROPERTY(VisibleAnywhere, Category = TestTex)
-	UTexture2D* CombinedNoiseTex;
-
-	UPROPERTY(VisibleAnywhere, Category = TestTex)
-	UTexture2D* CombinedSteepnessTex;
-
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
 
@@ -276,7 +240,7 @@ protected:
 	UPROPERTY()
 	APawn* PlayerPawn;
 
-	// THe runtime mesh component;
+	// The runtime mesh component;
 	UPROPERTY(EditAnywhere)
 	class URuntimeMeshComponent* RTMComponent;
 
@@ -284,10 +248,4 @@ protected:
 	virtual void BeginPlay() override;
 
 	int GetCurrentLODLevel(FVector target, FVector LODobject, FVector sectionNormal);
-
-private:
-
-	TArray<float> SobelVertexSteepness;
-
-
 };

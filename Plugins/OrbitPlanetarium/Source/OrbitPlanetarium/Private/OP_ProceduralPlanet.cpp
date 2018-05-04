@@ -59,10 +59,6 @@ void AOP_ProceduralPlanet::GenerateNoiseCubes()
 
 	NoiseCube = NewObject<UOP_NoiseCube>(this);
 	NoiseCube->Init(1024, NoiseType, Seed, Frequency, FractalGain, Interpolation, FractalType, Octaves, Lacunarity, heightMapDecals);
-
-	RoughNoiseCube = NewObject<UOP_NoiseCube>(this);
-	//RoughNoiseCube->Init(1024, RoughNoiseType, Seed, RoughFrequency, RoughFractalGain, RoughInterpolation, RoughFractalType, RoughOctaves, RoughLacunarity, heightMapDecals);
-
 	if (bGenerateDebugTextures)
 	{
 		cubemap = NoiseCube->GetCubeTextures();
@@ -78,7 +74,7 @@ TArray<UOP_SectionData*> AOP_ProceduralPlanet::GenerateIcosahedronSectionData(UO
 		UE_LOG(LogTemp, Warning, TEXT("Bad Outer provided AOP_ProceduralPlanet::GenerateIcosahedronSectionData"));
 	}
 	float t = (1.0f + FMath::Sqrt(5.0f)) / 2.0f;
-
+	
 	// Create the 12 vertices of the icosahedron
 	FVector v0 = FVector(1, -t, 0);
 	FVector v1 = FVector(-1, -t, 0);
@@ -234,7 +230,7 @@ void AOP_ProceduralPlanet::ApplyNoiseToMeshSection(UOP_SectionData * sectionData
 
 void AOP_ProceduralPlanet::GetVertexPositionFromNoise(FRuntimeMeshVertexSimple &vert, FVector n)
 {
-	if (NoiseCube == nullptr || RoughNoiseCube == nullptr)
+	if (NoiseCube == nullptr)
 	{
 		UE_LOG(LogTemp, Warning, TEXT("No NoiseCube or RoughNoiseCube found AOP_ProceduralPlanet::GetVertexPositionFromNoise"));
 		return;
@@ -261,7 +257,8 @@ void AOP_ProceduralPlanet::GetVertexPositionFromNoise(FRuntimeMeshVertexSimple &
 	vert.Position = sCoords.ToCartesian();
 	
 	// VertexColor
-	vert.Color = FColor(255 * height, 255 * height, 255 * height);
+	int vColor = FMath::Clamp(height, 0.0f, 1.0f) * 255;
+	vert.Color = FColor(vColor, vColor, vColor);
 	
 }
 
@@ -282,7 +279,7 @@ void AOP_ProceduralPlanet::UpdatePlanetMeshSections()
 		return;
 	}
 
-	if (NoiseCube == nullptr || RoughNoiseCube == nullptr)
+	if (NoiseCube == nullptr)
 	{
 		GenerateNoiseCubes();
 	}
@@ -509,7 +506,7 @@ int AOP_ProceduralPlanet::GetCurrentLODLevel(FVector target, FVector LODobject, 
 	float angle = FMath::Acos(FVector::DotProduct(sectionNormal, -camPosNrm));
 
 	// Check if the section is occluded
-	if (angle * (180.0f / PI) > 70.0f) { return 1; }
+	if (angle * (180.0f / PI) > 90.0f) { return 1; }
 
 	// if not then calculate LOD from distance
 	float dist = (LODobject - target).Size();
